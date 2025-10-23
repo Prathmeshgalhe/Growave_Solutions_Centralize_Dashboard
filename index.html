@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growave - Smart Relay Control</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 15px 15px 0 0;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-info span {
+            font-size: 0.9em;
+        }
+
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        .devices-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .device-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .device-header {
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .device-header h3 {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+
+        .device-status {
+            font-size: 0.8em;
+            opacity: 0.9;
+        }
+
+        .online { color: #27ae60; }
+        .offline { color: #e74c3c; }
+
+        .card {
+            padding: 15px;
+            margin: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+
+        .card h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            font-size: 1em;
+        }
+
+        .card h4 i {
+            margin-right: 8px;
+            color: #3498db;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .status-item {
+            background: white;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .status-item strong {
+            color: #2c3e50;
+            display: block;
+            font-size: 0.8em;
+            margin-bottom: 3px;
+        }
+
+        .relay-on { color: #27ae60; }
+        .relay-off { color: #e74c3c; }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .control-row:last-child {
+            border-bottom: none;
+        }
+
+        .relay-info {
+            flex: 1;
+        }
+
+        .relay-name {
+            font-weight: bold;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        .relay-state {
+            font-size: 0.8em;
+            color: #666;
+        }
+
+        .override {
+            font-size: 0.7em;
+            color: #e67e22;
+            margin-top: 2px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 4px;
+        }
+
+        .btn {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-on {
+            background: #27ae60;
+            color: white;
+        }
+        .btn-on:hover {
+            background: #219653;
+        }
+
+        .btn-off {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-off:hover {
+            background: #c0392b;
+        }
+
+        .btn-schedule {
+            background: #3498db;
+            color: white;
+            width: 100%;
+            margin-top: 8px;
+            font-size: 0.8em;
+            padding: 8px;
+        }
+        .btn-schedule:hover {
+            background: #2980b9;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.8em;
+        }
+
+        .time-inputs {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            font-size: 0.8em;
+        }
+
+        input, select {
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.8em;
+            width: 100%;
+        }
+
+        .days-selector {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .day-check {
+            flex: 1;
+        }
+
+        .day-check label {
+            display: block;
+            text-align: center;
+            padding: 4px 0;
+            background: #e9ecef;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: normal;
+            font-size: 0.7em;
+        }
+
+        .day-check input {
+            display: none;
+        }
+
+        .day-check input:checked + label {
+            background: #3498db;
+            color: white;
+        }
+
+        .device-tabs {
+            display: flex;
+            background: white;
+            margin: 8px;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .device-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8em;
+            transition: background 0.2s ease;
+        }
+
+        .device-tab.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .add-device-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .add-device-btn {
+            background: #9b59b6;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .add-device-btn:hover {
+            background: #8e44ad;
+            transform: translateY(-2px);
+        }
+
+        .device-form {
+            display: none;
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .device-form input {
+            margin-bottom: 10px;
+        }
+
+        /* Login/Signup styles */
+        .auth-container {
+            max-width: 400px;
+            margin: 60px auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .auth-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .auth-header h2 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            background: white;
+            border-radius: 0;
+            overflow: hidden;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s ease;
+        }
+
+        .auth-tab.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .auth-form {
+            padding: 20px;
+        }
+
+        .auth-form-group {
+            margin-bottom: 15px;
+        }
+
+        .auth-form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .auth-form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        .auth-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            width: 100%;
+            transition: background 0.2s ease;
+        }
+
+        .auth-btn:hover {
+            background: #2980b9;
+        }
+
+        .auth-message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .auth-message.error {
+            background: #ffeaa7;
+            color: #e74c3c;
+        }
+
+        .auth-message.success {
+            background: #55efc4;
+            color: #2d3436;
+        }
+
+        /* Notification styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideDown 0.3s ease;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .notification.success { background: #27ae60; }
+        .notification.error { background: #e74c3c; }
+        .notification.info { background: #3498db; }
+
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(0); opacity: 1; }
+            to { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+        }
+
+        @media (max-width: 768px) {
+            .devices-grid {
+                grid-template-columns: 1fr;
+            }
+            .container {
+                padding: 10px;
+            }
+            .header {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login/Signup Section -->
+    <div id="authSection" class="auth-container">
+        <div class="auth-header">
+            <h2><i class="fas fa-network-wired"></i> Growave</h2>
+            <p>Smart Relay Control System</p>
+        </div>
+
+        <div class="auth-tabs">
+            <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+            <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+        </div>
+
+        <!-- Login Form -->
+        <div id="loginForm" class="auth-form">
+            <div class="auth-form-group">
+                <label for="loginEmail">Email</label>
+                <input type="email" id="loginEmail" placeholder="Enter your email">
+            </div>
+            <div class="auth-form-group">
+                <label for="loginPassword">Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter your password">
+            </div>
+            <button class="auth-btn" onclick="login()">Login</button>
+            <div id="loginMessage" class="auth-message"></div>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="signupForm" class="auth-form hidden">
+            <div class="auth-form-group">
+                <label for="signupEmail">Email</label>
+                <input type="email" id="signupEmail" placeholder="Enter your email">
+            </div>
+            <div class="auth-form-group">
+                <label for="signupPassword">Password</label>
+                <input type="password" id="signupPassword" placeholder="Create a password">
+            </div>
+            <div class="auth-form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" placeholder="Confirm your password">
+            </div>
+            <button class="auth-btn" onclick="signup()">Sign Up</button>
+            <div id="signupMessage" class="auth-message"></div>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="container hidden">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1><i class="fas fa-network-wired"></i> Multi-Device Relay Control</h1>
+                <p>Central Management System</p>
+            </div>
+            <div class="user-info">
+                <span id="userEmail">user@example.com</span>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Devices Grid -->
+        <div class="devices-grid" id="devicesGrid">
+            <!-- Devices will be dynamically added here -->
+        </div>
+
+        <!-- Add New Device Section -->
+        <div class="add-device-section">
+            <button class="add-device-btn" onclick="toggleDeviceForm()">
+                <i class="fas fa-plus"></i> Add New Device
+            </button>
+
+            <div class="device-form" id="deviceForm">
+                <div class="form-group">
+                    <label>Device ID:</label>
+                    <input type="text" id="newDeviceId" placeholder="esp32_device_03">
+                </div>
+                <div class="form-group">
+                    <label>Device Name:</label>
+                    <input type="text" id="newDeviceName" placeholder="Living Room Lights">
+                </div>
+                <button class="btn-schedule" onclick="addNewDevice()">
+                    <i class="fas fa-save"></i> Add Device
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyB0pxbiRe5flvA7BPqiJgyP8n8aWmkoLI4",
+            authDomain: "growave-esp32-central.firebaseapp.com",
+            databaseURL: "https://growave-esp32-central-default-rtdb.firebaseio.com",
+            projectId: "growave-esp32-central",
+            storageBucket: "growave-esp32-central.firebasestorage.app",
+            messagingSenderId: "518571286609",
+            appId: "1:518571286609:web:afdd9ef5f364873006d870",
+            measurementId: "G-XK1G35BGL0"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // Global variables
+        let devices = [];
+        let userUid = null;
+
+        // Check authentication state on page load
+        window.addEventListener('load', function() {
+            auth.onAuthStateChanged(function(user) {
+                if (user) {
+                    // User is signed in
+                    userUid = user.uid;
+                    document.getElementById('userEmail').textContent = user.email;
+                    showDashboard();
+                    loadUserDevices();
+                } else {
+                    // User is signed out
+                    showAuth();
+                }
+            });
+        });
+
+        // Authentication functions
+        function switchAuthTab(tab) {
+            document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
+            document.getElementById('signupForm').classList.toggle('hidden', tab !== 'signup');
+
+            // Update active tab
+            document.querySelectorAll('.auth-tab').forEach(button => {
+                button.classList.toggle('active', button.textContent.toLowerCase().includes(tab));
+            });
+        }
+
+        function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const messageElement = document.getElementById('loginMessage');
+
+            if (!email || !password) {
+                messageElement.textContent = 'Please enter email and password';
+                messageElement.className = 'auth-message error';
+                return;
+            }
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    messageElement.textContent = 'Login successful!';
+                    messageElement.className = 'auth-message success';
+                    // The auth state change listener will handle the UI update
+                })
+                .catch((error) => {
+                    messageElement.textContent = error.message;
+                    messageElement.className = 'auth-message error';
+                });
+        }
+
+        function signup() {
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const messageElement = document.getElementById('signupMessage');
+
+            if (!email || !password || !confirmPassword) {
+                messageElement.textContent = 'Please fill in all fields';
+                messageElement.className = 'auth-message error';
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                messageElement.textContent = 'Passwords do not match';
+                messageElement.className = 'auth-message error';
+                return;
+            }
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    messageElement.textContent = 'Account created successfully!';
+                    messageElement.className = 'auth-message success';
+                    // The auth state change listener will handle the UI update
+                })
+                .catch((error) => {
+                    messageElement.textContent = error.message;
+                    messageElement.className = 'auth-message error';
+                });
+        }
+
+        function logout() {
+            auth.signOut()
+                .then(() => {
+                    showAuth();
+                    showMessage('Logged out successfully', 'success');
+                })
+                .catch((error) => {
+                    console.error('Logout error:', error);
+                });
+        }
+
+        function showAuth() {
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('dashboardSection').classList.add('hidden');
+        }
+
+        function showDashboard() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+        }
+
+        // Load user devices from Firebase
+        function loadUserDevices() {
+            if (!userUid) return;
+
+            database.ref(`users/${userUid}/devices`).once('value')
+                .then((snapshot) => {
+                    const userDevices = snapshot.val();
+                    devices = [];
+
+                    if (userDevices) {
+                        Object.keys(userDevices).forEach(deviceId => {
+                            devices.push({
+                                id: deviceId,
+                                name: userDevices[deviceId].name
+                            });
+                        });
+                    }
+
+                    initializeDashboard();
+                })
+                .catch((error) => {
+                    console.error('Error loading user devices:', error);
+                });
+        }
+
+        // Dashboard functions
+        function initializeDashboard() {
+            const devicesGrid = document.getElementById('devicesGrid');
+            devicesGrid.innerHTML = '';
+
+            devices.forEach(device => {
+                createDeviceCard(device);
+                setupDeviceListeners(device.id);
+            });
+        }
+
+        function createDeviceCard(device) {
+            const devicesGrid = document.getElementById('devicesGrid');
+
+            const deviceCard = document.createElement('div');
+            deviceCard.className = 'device-card';
+            deviceCard.id = `device-${device.id}`;
+            deviceCard.innerHTML = `
+                <div class="device-header">
+                    <h3><i class="fas fa-microchip"></i> ${device.name}</h3>
+                    <div class="device-status" id="status-${device.id}">Loading...</div>
+                </div>
+
+                <!-- Device Tabs -->
+                <div class="device-tabs">
+                    <button class="device-tab active" onclick="switchDeviceTab('${device.id}', 'control')">Control</button>
+                    <button class="device-tab" onclick="switchDeviceTab('${device.id}', 'schedule')">Schedule</button>
+                </div>
+
+                <!-- Control Tab -->
+                <div id="control-${device.id}" class="tab-content active">
+                    <!-- Status Card -->
+                    <div class="card">
+                        <h4><i class="fas fa-chart-bar"></i> Status</h4>
+                        <div id="deviceStatus-${device.id}">Loading device status...</div>
+                    </div>
+
+                    <!-- Control Card -->
+                    <div class="card">
+                        <h4><i class="fas fa-gamepad"></i> Manual Control</h4>
+
+                        <!-- Relay 1 -->
+                        <div class="control-row">
+                            <div class="relay-info">
+                                <div class="relay-name">Relay 1</div>
+                                <div class="relay-state" id="relay1-state-${device.id}">OFF</div>
+                                <div class="override" id="relay1-override-${device.id}"></div>
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-on" onclick="sendCommand('${device.id}', 1, true)">ON</button>
+                                <button class="btn btn-off" onclick="sendCommand('${device.id}', 1, false)">OFF</button>
+                            </div>
+                        </div>
+
+                        <!-- Relay 2 -->
+                        <div class="control-row">
+                            <div class="relay-info">
+                                <div class="relay-name">Relay 2</div>
+                                <div class="relay-state" id="relay2-state-${device.id}">OFF</div>
+                                <div class="override" id="relay2-override-${device.id}"></div>
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-on" onclick="sendCommand('${device.id}', 2, true)">ON</button>
+                                <button class="btn btn-off" onclick="sendCommand('${device.id}', 2, false)">OFF</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Schedule Tab -->
+                <div id="schedule-${device.id}" class="tab-content">
+                    <div class="card">
+                        <h4><i class="fas fa-clock"></i> Relay 1 Schedule</h4>
+
+                        <div class="form-group">
+                            <label>Enable Schedule</label>
+                            <select id="relay1-enabled-${device.id}">
+                                <option value="true">Enabled</option>
+                                <option value="false">Disabled</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Time Range</label>
+                            <div class="time-inputs">
+                                <input type="time" id="relay1-start-${device.id}" value="09:00">
+                                <span>to</span>
+                                <input type="time" id="relay1-end-${device.id}" value="17:00">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Active Days</label>
+                            <div class="days-selector">
+                                <div class="day-check">
+                                    <input type="checkbox" id="mon1-${device.id}" checked>
+                                    <label for="mon1-${device.id}">M</label>
+                                </div>
+                                <div class="day-check">
+                                    <input type="checkbox" id="tue1-${device.id}" checked>
+                                    <label for="tue1-${device.id}">T</label>
+                                </div>
+                                <div class="day-check">
+                                    <input type="checkbox" id="wed1-${device.id}" checked>
+                                    <label for="wed1-${device.id}">W</label>
+                                </div>
+                                <div class="day-check">
+                                    <input type="checkbox" id="thu1-${device.id}" checked>
+                                    <label for="thu1-${device.id}">T</label>
+                                </div>
+                                <div class="day-check">
+                                    <input type="checkbox" id="fri1-${device.id}" checked>
+                                    <label for="fri1-${device.id}">F</label>
+                                </div>
+                                <div class="day-check">
+                                    <input type="checkbox" id="sat1-${device.id}">
+                                    <label for="sat1-${device.id}">S</label>
+                                </div>
+                                <div class="day-check">
+                                    <input type="checkbox" id="sun1-${device.id}">
+                                    <label for="sun1-${device.id}">S</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Exclude Dates (YYYY-MM-DD):</label>
+                            <input type="text" id="relay1-excludeDates-${device.id}"
+                                   placeholder="2024-12-25, 2024-01-01">
+                            <small style="color: #7f8c8d; font-size: 0.7em;">Comma separated dates to exclude</small>
+                        </div>
+
+                        <button class="btn btn-schedule" onclick="saveSchedule('${device.id}', 1)">
+                            <i class="fas fa-save"></i> Save Schedule
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <h4><i class="fas fa-clock"></i> Relay 2 Schedule</h4>
+
+                        <div class="form-group">
+                            <label>Enable Schedule</label>
+                            <select id="relay2-enabled-${device.id}">
+                                <option value="true">Enabled</option>
+                                <option value="false">Disabled</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Time Range</label>
+                            <div class="time-inputs">
+                                <input type="time" id="relay2-start-${device.id}" value="09:00">
+                                <span>to</span>
+                                <input type="time" id="relay2-end-${device.id}" value="17:00">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Active Days</label>
+                            <div class="days-selector">
+                                <div class="day-check">
+                                    <input type="checkbox" id="mon2-${device.id}" checked>
+                                    <label for="mon2-${device.id}">M</label>
+                                </div>
+                                <div class="day-check">
+                                    <input type="checkbox" id="tue2-${device.id}" checked>
+                                    <label for="tue2-${device.id}">T</label>
+                                </div>
+                                <div class="day-check">
+                                    <input type="checkbox" id="wed2-${device.id}" checked>
+                                    <label for="wed2-${device.id}">W</label>
+                                </div>
+                                <div class="day-check">
+                                    <input type="checkbox" id="thu2-${device.id}" checked>
+                                    <label for="thu2-${device.id}">T</label>
+                                </div>
+                                <div class="day-check">
+                                    <input type="checkbox" id="fri2-${device.id}" checked>
+                                    <label for="fri2-${device.id}">F</label>
+                                </div>
+                                <div class="day-check">
+                                    <input type="checkbox" id="sat2-${device.id}">
+                                    <label for="sat2-${device.id}">S</label>
+                                </div>
+                                <div class="day-check">
+                                    <input type="checkbox" id="sun2-${device.id}">
+                                    <label for="sun2-${device.id}">S</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Exclude Dates (YYYY-MM-DD):</label>
+                            <input type="text" id="relay2-excludeDates-${device.id}"
+                                   placeholder="2024-12-25, 2024-01-01">
+                            <small style="color: #7f8c8d; font-size: 0.7em;">Comma separated dates to exclude</small>
+                        </div>
+
+                        <button class="btn btn-schedule" onclick="saveSchedule('${device.id}', 2)">
+                            <i class="fas fa-save"></i> Save Schedule
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <h4><i class="fas fa-sync-alt"></i> Load Schedule</h4>
+                        <button class="btn btn-schedule" onclick="loadSchedules('${device.id}')">
+                            <i class="fas fa-download"></i> Load from Device
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            devicesGrid.appendChild(deviceCard);
+        }
+
+        function setupDeviceListeners(deviceId) {
+            const devicePath = `devices/${deviceId}`;
+
+            // Real-time status updates
+            database.ref(devicePath).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    updateDeviceStatus(deviceId, data);
+                }
+            });
+
+            // Load schedules for this device
+            loadSchedules(deviceId);
+        }
+
+        function switchDeviceTab(deviceId, tabName) {
+            // Hide all tabs for this device
+            document.querySelectorAll(`#device-${deviceId} .tab-content`).forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Remove active class from all tab buttons for this device
+            document.querySelectorAll(`#device-${deviceId} .device-tab`).forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(`${tabName}-${deviceId}`).classList.add('active');
+
+            // Activate selected tab button
+            event.target.classList.add('active');
+        }
+
+        function updateDeviceStatus(deviceId, data) {
+            const statusElement = document.getElementById(`status-${deviceId}`);
+            const statusDiv = document.getElementById(`deviceStatus-${deviceId}`);
+
+            const relay1State = data.relays && data.relays[1] ? 'ON' : 'OFF';
+            const relay2State = data.relays && data.relays[2] ? 'ON' : 'OFF';
+            const currentTime = data.currentTime || '--:--';
+            const onlineStatus = data.online ? 'Online' : 'Offline';
+
+            // Update device header status
+            statusElement.innerHTML = onlineStatus === 'Online' ?
+                '<span class="online">🟢 Online</span>' :
+                '<span class="offline">🔴 Offline</span>';
+
+            // Manual override status
+            const override1 = data.manualOverride && data.manualOverride.active1;
+            const override2 = data.manualOverride && data.manualOverride.active2;
+            const remaining1 = data.manualOverride ? (data.manualOverride.remaining1 || 0) : 0;
+            const remaining2 = data.manualOverride ? (data.manualOverride.remaining2 || 0) : 0;
+
+            let statusHTML = `
+                <div class="status-grid">
+                    <div class="status-item">
+                        <strong>Relay 1</strong>
+                        <span class="${relay1State === 'ON' ? 'relay-on' : 'relay-off'}">
+                            ${relay1State === 'ON' ? '🟢 ON' : '🔴 OFF'}
+                        </span>
+                    </div>
+                    <div class="status-item">
+                        <strong>Relay 2</strong>
+                        <span class="${relay2State === 'ON' ? 'relay-on' : 'relay-off'}">
+                            ${relay2State === 'ON' ? '🟢 ON' : '🔴 OFF'}
+                        </span>
+                    </div>
+                    <div class="status-item">
+                        <strong>Time</strong>
+                        ${currentTime}
+                    </div>
+                    <div class="status-item">
+                        <strong>IP</strong>
+                        ${data.ip || 'Unknown'}
+                    </div>
+                </div>
+            `;
+
+            statusDiv.innerHTML = statusHTML;
+
+            // Update relay states and override info
+            updateRelayState(deviceId, 1, relay1State, override1, remaining1);
+            updateRelayState(deviceId, 2, relay2State, override2, remaining2);
+        }
+
+        function updateRelayState(deviceId, relayNumber, state, isOverride, remaining) {
+            const stateElement = document.getElementById(`relay${relayNumber}-state-${deviceId}`);
+            const overrideElement = document.getElementById(`relay${relayNumber}-override-${deviceId}`);
+
+            stateElement.textContent = state;
+            stateElement.className = `relay-state ${state === 'ON' ? 'relay-on' : 'relay-off'}`;
+
+            if (isOverride && remaining > 0) {
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                overrideElement.textContent = `Manual: ${minutes}m ${seconds}s`;
+            } else {
+                overrideElement.textContent = '';
+            }
+        }
+
+        function sendCommand(deviceId, relay, state) {
+            // Check device ownership
+            database.ref(`devices/${deviceId}/owner`).once('value')
+                .then(snapshot => {
+                    if (snapshot.val() === userUid) {
+                        database.ref(`devices/${deviceId}/immediateCommands/relay${relay}`).set(state)
+                            .then(() => {
+                                showMessage(`Device ${deviceId}: Relay ${relay} ${state ? 'ON' : 'OFF'}`, 'success');
+                            })
+                            .catch((error) => {
+                                showMessage(`Device ${deviceId}: Command failed`, 'error');
+                            });
+                    } else {
+                        showMessage(`Access denied: this device does not belong to you.`, 'error');
+                    }
+                })
+                .catch(error => {
+                    showMessage(`Error checking device ownership`, 'error');
+                });
+        }
+
+        function saveSchedule(deviceId, relay) {
+            // Check device ownership
+            database.ref(`devices/${deviceId}/owner`).once('value')
+                .then(snapshot => {
+                    if (snapshot.val() === userUid) {
+                        const enabled = document.getElementById(`relay${relay}-enabled-${deviceId}`).value === 'true';
+                        const start = document.getElementById(`relay${relay}-start-${deviceId}`).value;
+                        const end = document.getElementById(`relay${relay}-end-${deviceId}`).value;
+                        const excludeDates = document.getElementById(`relay${relay}-excludeDates-${deviceId}`).value;
+
+                        // Get selected days
+                        const days = [];
+                        for (let i = 1; i <= 7; i++) {
+                            const dayNames = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+                            if (document.getElementById(`${dayNames[i-1]}${relay}-${deviceId}`).checked) {
+                                days.push(i.toString());
+                            }
+                        }
+
+                        const scheduleData = {
+                            enabled: enabled,
+                            startTime: start,
+                            endTime: end,
+                            days: days.join(','),
+                            excludeDates: excludeDates
+                        };
+
+                        database.ref(`devices/${deviceId}/currentSchedule/relay${relay}`).set(scheduleData)
+                            .then(() => {
+                                showMessage(`Device ${deviceId}: Schedule saved for Relay ${relay}`, 'success');
+                            })
+                            .catch((error) => {
+                                showMessage(`Device ${deviceId}: Failed to save schedule`, 'error');
+                            });
+                    } else {
+                        showMessage(`Access denied: this device does not belong to you.`, 'error');
+                    }
+                })
+                .catch(error => {
+                    showMessage(`Error checking device ownership`, 'error');
+                });
+        }
+
+        function loadSchedules(deviceId) {
+            // Check device ownership
+            database.ref(`devices/${deviceId}/owner`).once('value')
+                .then(snapshot => {
+                    if (snapshot.val() === userUid) {
+                        database.ref(`devices/${deviceId}/currentSchedule`).once('value')
+                            .then((snapshot) => {
+                                const schedules = snapshot.val();
+                                if (schedules) {
+                                    loadSchedule(deviceId, 1, schedules.relay1);
+                                    loadSchedule(deviceId, 2, schedules.relay2);
+                                    showMessage(`Device ${deviceId}: Schedules loaded`, 'success');
+                                }
+                            })
+                            .catch((error) => {
+                                showMessage(`Device ${deviceId}: Failed to load schedules`, 'error');
+                            });
+                    } else {
+                        showMessage(`Access denied: this device does not belong to you.`, 'error');
+                    }
+                })
+                .catch(error => {
+                    showMessage(`Error checking device ownership`, 'error');
+                });
+        }
+
+        function loadSchedule(deviceId, relay, schedule) {
+            if (!schedule) return;
+
+            if (schedule.enabled !== undefined) {
+                document.getElementById(`relay${relay}-enabled-${deviceId}`).value = schedule.enabled.toString();
+            }
+            if (schedule.startTime) {
+                document.getElementById(`relay${relay}-start-${deviceId}`).value = schedule.startTime;
+            }
+            if (schedule.endTime) {
+                document.getElementById(`relay${relay}-end-${deviceId}`).value = schedule.endTime;
+            }
+            if (schedule.excludeDates !== undefined) {
+                document.getElementById(`relay${relay}-excludeDates-${deviceId}`).value = schedule.excludeDates;
+            }
+
+            // Load days
+            if (schedule.days) {
+                const daysArray = schedule.days.split(',');
+                const dayNames = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+                dayNames.forEach((day, index) => {
+                    const dayNumber = (index + 1).toString();
+                    document.getElementById(`${day}${relay}-${deviceId}`).checked = daysArray.includes(dayNumber);
+                });
+            }
+        }
+
+        function toggleDeviceForm() {
+            const form = document.getElementById('deviceForm');
+            form.style.display = form.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function addNewDevice() {
+            const deviceId = document.getElementById('newDeviceId').value.trim();
+            const deviceName = document.getElementById('newDeviceName').value.trim();
+
+            if (!deviceId || !deviceName) {
+                showMessage('Please enter both Device ID and Name', 'error');
+                return;
+            }
+
+            // Check if device already exists in user's devices
+            if (devices.find(d => d.id === deviceId)) {
+                showMessage('Device ID already exists in your devices', 'error');
+                return;
+            }
+
+            // Check if device exists in Firebase and set ownership
+            database.ref(`devices/${deviceId}`).once('value')
+                .then(snapshot => {
+                    if (snapshot.exists()) {
+                        // Device exists, check if it's already owned
+                        const deviceData = snapshot.val();
+                        if (deviceData.owner && deviceData.owner !== userUid) {
+                            showMessage('Device is already owned by another user', 'error');
+                            return;
+                        }
+
+                        // Set ownership
+                        database.ref(`devices/${deviceId}/owner`).set(userUid)
+                            .then(() => {
+                                // Add device to user's device list
+                                database.ref(`users/${userUid}/devices/${deviceId}`).set({
+                                    name: deviceName,
+                                    addedAt: new Date().toISOString()
+                                })
+                                .then(() => {
+                                    // Add new device to local array
+                                    const newDevice = { id: deviceId, name: deviceName };
+                                    devices.push(newDevice);
+
+                                    // Create card for new device
+                                    createDeviceCard(newDevice);
+                                    setupDeviceListeners(deviceId);
+
+                                    // Reset form
+                                    document.getElementById('newDeviceId').value = '';
+                                    document.getElementById('newDeviceName').value = '';
+                                    document.getElementById('deviceForm').style.display = 'none';
+
+                                    showMessage(`Device ${deviceName} added successfully`, 'success');
+                                });
+                            })
+                            .catch(error => {
+                                showMessage(`Error setting device ownership: ${error.message}`, 'error');
+                            });
+                    } else {
+                        // Device doesn't exist, create it
+                        database.ref(`devices/${deviceId}`).set({
+                            owner: userUid,
+                            name: deviceName,
+                            created: new Date().toISOString(),
+                            online: false
+                        })
+                        .then(() => {
+                            // Add device to user's device list
+                            database.ref(`users/${userUid}/devices/${deviceId}`).set({
+                                name: deviceName,
+                                addedAt: new Date().toISOString()
+                            })
+                            .then(() => {
+                                // Add new device to local array
+                                const newDevice = { id: deviceId, name: deviceName };
+                                devices.push(newDevice);
+
+                                // Create card for new device
+                                createDeviceCard(newDevice);
+                                setupDeviceListeners(deviceId);
+
+                                // Reset form
+                                document.getElementById('newDeviceId').value = '';
+                                document.getElementById('newDeviceName').value = '';
+                                document.getElementById('deviceForm').style.display = 'none';
+
+                                showMessage(`Device ${deviceName} created and added successfully`, 'success');
+                            });
+                        })
+                        .catch(error => {
+                            showMessage(`Error creating device: ${error.message}`, 'error');
+                        });
+                    }
+                })
+                .catch(error => {
+                    showMessage(`Error checking device: ${error.message}`, 'error');
+                });
+        }
+
+        function showMessage(message, type) {
+            // Remove existing notifications
+            document.querySelectorAll('.notification').forEach(notif => {
+                notif.remove();
+            });
+
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'}"></i>
+                ${message}
+            `;
+
+            document.body.appendChild(notification);
+
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideUp 0.3s ease';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
