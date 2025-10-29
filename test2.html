@@ -32,6 +32,10 @@
             --border-radius: 12px;
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             --transition: all 0.3s ease;
+
+            /* Footer height used to keep main content above footer */
+            --footer-height: 64px;    /* adjust if your footer is taller */
+            --footer-gap: 60px;       /* increased gap so last card is fully visible */
         }
 
         body {
@@ -44,25 +48,44 @@
         /* Prevent whole-page overscroll and make main-content the scrollable area */
         html, body {
             height: 100%;
-            overscroll-behavior-y: contain; /* prevents scroll chaining / rubber-band going past header/footer */
-            -webkit-overflow-scrolling: auto;
             margin: 0;
             padding: 0;
-            overflow: hidden; /* keep page itself from scrolling */
+            overflow: hidden;                 /* prevent body rubber-band scrolling */
+            overscroll-behavior: contain;     /* stop scroll chaining */
+            overscroll-behavior-y: contain;
+            -webkit-overflow-scrolling: auto;
+            touch-action: pan-y;              /* allow vertical pan inside scrollable area only */
         }
 
-        /* app-container should fill viewport and let inner area scroll */
+        /* app container / main area */
         .app-container {
-            height: 100vh; /* full viewport */
+            height: 100vh;
             display: flex;
             flex-direction: column;
         }
 
-        /* Make only main-content scrollable (touch-friendly) */
+        /* main content MUST be the only scrollable area */
         .main-content {
             flex: 1 1 auto;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
+            overflow-y: auto;                 /* enable inner scrolling */
+            -webkit-overflow-scrolling: touch; /* smooth iOS scroll */
+            overscroll-behavior: contain;
+            touch-action: pan-y;
+            /* Reserve more space so content never scrolls under the fixed footer,
+               and include safe-area inset for iOS devices with home indicator */
+            padding-bottom: calc(var(--footer-height) + var(--footer-gap) + env(safe-area-inset-bottom));
+        }
+
+        /* fixed footer (keep above content) */
+        .app-footer {
+            height: var(--footer-height);
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 999;
+            box-shadow: 0 -6px 18px rgba(0,0,0,0.03);
         }
 
         /* ===== LAYOUT ===== */
@@ -138,6 +161,7 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+            margin-bottom: 15%;
         }
 
         /* ===== PAGE TITLE ===== */
@@ -728,12 +752,14 @@
 
         /* ===== FOOTER NAV ===== */
         .app-footer {
-            width: 100%;
-            background: white;
-            box-shadow: 0 -6px 18px rgba(0,0,0,0.03);
-            position: sticky;
+            height: var(--footer-height);
+            position: fixed;
+            left: 0;
+            right: 0;
             bottom: 0;
-            z-index: 200;
+            background: white;
+            z-index: 999;
+            box-shadow: 0 -6px 18px rgba(0,0,0,0.03);
         }
         .footer-nav {
             display: flex;
@@ -763,6 +789,19 @@
         }
         #authSection:not(.hidden) ~ footer.app-footer {
             display: none;
+        }
+
+        /* ensure modals and notifications remain above footer */
+        .modal { z-index: 1100; }
+        .notification { z-index: 1200; }
+
+        /* spacer to ensure last item is visible */
+        .bottom-spacer {
+            /* matches padding-bottom so there's a real element to push content above footer */
+            height: calc(var(--footer-height) + var(--footer-gap) + env(safe-area-inset-bottom));
+            width: 100%;
+            pointer-events: none;
+            background: transparent;
         }
     </style>
 </head>
@@ -826,6 +865,8 @@
             <div class="devices-grid" id="devicesGrid">
                 <!-- Devices will be dynamically added here -->
             </div>
+            <!-- spacer to prevent last card from being hidden under footer -->
+            <div class="bottom-spacer" aria-hidden="true"></div>
         </div>
     </div>
 
