@@ -1612,7 +1612,7 @@
 
         // Navigation helpers for new back button and footer
         function goHome() {
-            window.location.href = 'test.html';
+            window.location.href = 'index.html';
         }
 
         function setFooterActive(name) {
@@ -1627,7 +1627,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             try {
                 const path = window.location.pathname.split('/').pop().toLowerCase();
-                if (path === '' || path === 'test.html') setFooterActive('home');
+                if (path === '' || path === 'index.html') setFooterActive('home');
                 else if (path.includes('setting')) setFooterActive('settings');
                 else if (path.includes('profile')) setFooterActive('profile');
                 else setFooterActive('home');
@@ -1638,7 +1638,7 @@
     <!-- Footer -->
     <footer class="app-footer" role="contentinfo" aria-label="Footer navigation">
         <nav class="footer-nav" role="navigation" aria-label="Main footer">
-            <a href="test.html" id="footer-home" class="footer-link">
+            <a href="index.html" id="footer-home" class="footer-link">
                 <i class="fas fa-home"></i>
                 <span>Home</span>
             </a>
