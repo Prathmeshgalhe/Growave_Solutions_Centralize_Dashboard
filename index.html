@@ -1012,24 +1012,24 @@
             });
         });
 
-        // Authentication functions
-        function showSignup() {
-            const email = prompt("Enter your email for signup:");
-            const password = prompt("Enter your password:");
+        // // Authentication functions
+        // function showSignup() {
+        //     const email = prompt("Enter your email for signup:");
+        //     const password = prompt("Enter your password:");
             
-            if (!email || !password) {
-                showMessage('Please enter both email and password', 'error');
-                return;
-            }
+        //     if (!email || !password) {
+        //         showMessage('Please enter both email and password', 'error');
+        //         return;
+        //     }
 
-            auth.createUserWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    showMessage('Account created successfully!', 'success');
-                })
-                .catch((error) => {
-                    showMessage(error.message, 'error');
-                });
-        }
+        //     auth.createUserWithEmailAndPassword(email, password)
+        //         .then((userCredential) => {
+        //             showMessage('Account created successfully!', 'success');
+        //         })
+        //         .catch((error) => {
+        //             showMessage(error.message, 'error');
+        //         });
+        // }
 
         function login() {
             const email = document.getElementById('loginEmail').value;
