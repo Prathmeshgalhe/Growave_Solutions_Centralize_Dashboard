@@ -10,805 +10,419 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         /* ===== RESET & BASE STYLES ===== */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-        :root {
-            --primary: #4361ee;
-            --primary-light: #4895ef;
-            --secondary: #3f37c9;
-            --success: #4cc9f0;
-            --danger: #f72585;
-            --warning: #f8961e;
-            --info: #4895ef;
-            --light: #f8f9fa;
-            --dark: #212529;
-            --gray: #6c757d;
-            --gray-light: #e9ecef;
-            --border-radius: 12px;
-            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            --transition: all 0.3s ease;
-        }
+    :root {
+        --primary: #4361ee;
+        --primary-light: #4895ef;
+        --secondary: #3f37c9;
+        --success: #4cc9f0;
+        --danger: #f72585;
+        --warning: #f8961e;
+        --info: #4895ef;
+        --light: #f8f9fa;
+        --dark: #212529;
+        --gray: #6c757d;
+        --gray-light: #e9ecef;
+        --border-radius: 12px;
+        --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --transition: all 0.3s ease;
+    }
 
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;               /* prevent page from scrolling (rubber-band) */
-            overscroll-behavior-y: contain; /* stop scroll chaining past header/footer */
-            -webkit-overflow-scrolling: auto;
-        }
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        overscroll-behavior-y: contain;
+        -webkit-overflow-scrolling: auto;
+    }
 
-        body {
-            background-color: #f5f7fb;
-            color: var(--dark);
-            min-height: 100vh;
-            padding: 0;
-        }
+    body {
+        background-color: #f5f7fb;
+        color: var(--dark);
+        min-height: 100vh;
+        padding: 0;
+    }
 
-        .app-container {
-            height: 100vh;      /* fill viewport */
-            display: flex;
-            flex-direction: column;
-        }
+    .app-container {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
 
-        /* ===== HEADER ===== */
+    /* ===== HEADER ===== */
+    .header {
+        background: white;
+        box-shadow: var(--shadow);
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 200;
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--primary);
+        font-weight: 700;
+        font-size: 1.4rem;
+    }
+
+    .logo i {
+        font-size: 1.6rem;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+    }
+
+    .logout-btn {
+        background: none;
+        border: none;
+        color: var(--gray);
+        cursor: pointer;
+        font-size: 1.1rem;
+        transition: var(--transition);
+    }
+
+    .logout-btn:hover {
+        color: var(--danger);
+    }
+
+    /* ===== MAIN CONTENT ===== */
+    .main-content {
+        flex: 1 1 auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* ===== PAGE TITLE ===== */
+    .page-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .page-title h2 {
+        font-size: 1.5rem;
+        color: var(--dark);
+    }
+
+    /* ===== AUTH STYLES ===== */
+    .auth-container {
+        max-width: 400px;
+        margin: 40px auto;
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .auth-header {
+        background: var(--primary);
+        color: white;
+        padding: 25px;
+        text-align: center;
+    }
+
+    .auth-header h2 {
+        font-size: 1.8rem;
+        margin-bottom: 5px;
+    }
+
+    .auth-form {
+        padding: 25px;
+    }
+
+    .auth-form-group {
+        margin-bottom: 20px;
+    }
+
+    .auth-form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--dark);
+    }
+
+    .auth-form-group input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--gray-light);
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+
+    .auth-form-group input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
+
+    .auth-btn {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        width: 100%;
+        transition: var(--transition);
+    }
+
+    .auth-btn:hover {
+        background: var(--secondary);
+    }
+
+    .auth-message {
+        margin-top: 15px;
+        padding: 12px;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: 600;
+    }
+
+    .auth-message.error {
+        background: rgba(247, 37, 133, 0.1);
+        color: var(--danger);
+    }
+
+    .auth-message.success {
+        background: rgba(76, 201, 240, 0.2);
+        color: var(--success);
+    }
+
+    /* ===== NOTIFICATIONS ===== */
+    .notification {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideDown 0.3s ease;
+        min-width: 200px;
+        text-align: center;
+    }
+
+    .notification.success { background: var(--success); }
+    .notification.error { background: var(--danger); }
+    .notification.info { background: var(--info); }
+
+    @keyframes slideDown {
+        from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+        to { transform: translateX(-50%) translateY(0); opacity: 1; }
+    }
+
+    @keyframes slideUp {
+        from { transform: translateX(-50%) translateY(0); opacity: 1; }
+        to { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+    }
+
+    /* ===== RESPONSIVE DESIGN ===== */
+    @media (max-width: 768px) {
+        .main-content {
+            padding: 15px;
+        }
+    }
+
+    @media (max-width: 480px) {
         .header {
-            background: white;
-            box-shadow: var(--shadow);
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 200;
+            padding: 12px 15px;
         }
 
         .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--primary);
-            font-weight: 700;
-            font-size: 1.4rem;
-        }
-
-        .logo i {
-            font-size: 1.6rem;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+            font-size: 1.2rem;
         }
 
         .user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--primary);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
+            width: 32px;
+            height: 32px;
+            font-size: 0.9rem;
         }
 
-        .logout-btn {
-            background: none;
-            border: none;
-            color: var(--gray);
-            cursor: pointer;
-            font-size: 1.1rem;
-            transition: var(--transition);
-        }
-
-        .logout-btn:hover {
-            color: var(--danger);
-        }
-
-        /* ===== MAIN CONTENT ===== */
         .main-content {
-            flex: 1 1 auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            overflow-y: auto;                 /* only this area scrolls */
-            -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
-        }
-
-        /* ===== PAGE TITLE ===== */
-        .page-title {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
+            padding: 10px;
         }
 
         .page-title h2 {
-            font-size: 1.5rem;
-            color: var(--dark);
-        }
-
-        .add-device-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: var(--shadow);
-            transition: var(--transition);
-            font-size: 1.2rem;
-        }
-
-        .add-device-btn:hover {
-            background: var(--secondary);
-            transform: translateY(-2px);
-        }
-
-        /* ===== DEVICES GRID ===== */
-        .devices-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-
-        /* ===== DEVICE CARD ===== */
-        .device-card {
-            background: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            transition: var(--transition);
-            position: relative;
-        }
-
-        .device-header {
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--gray-light);
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        }
-
-        .device-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--dark);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .device-name i {
-            color: var(--primary);
-        }
-
-        .device-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .action-btn {
-            background: none;
-            border: none;
-            color: var(--gray);
-            cursor: pointer;
-            font-size: 1rem;
-            transition: var(--transition);
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .action-btn:hover {
-            background: var(--gray-light);
-            color: var(--primary);
-        }
-
-        /* ===== DEVICE CONTENT ===== */
-        .device-content {
-            padding: 15px;
-        }
-
-        .relay-grid {
-            display: grid;
-            /* responsive 2-per-row: each column min 140px, expand up to 1fr */
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px;
-            margin-bottom: 15px;
-        }
-
-        .relay-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            border-radius: 8px;
-            background: var(--light);
-        }
-
-        .relay-info {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .relay-label {
-            font-size: 0.9rem;
-            color: var(--gray);
-            font-weight: 500;
-        }
-
-        .relay-status {
-            font-size: 1rem;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 20px;
-            display: inline-block;
-            min-width: 80px;
-            text-align: center;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .status-active {
-            background: rgba(76, 201, 240, 0.2);
-            color: var(--success);
-        }
-
-        .status-inactive {
-            background: rgba(247, 37, 133, 0.1);
-            color: var(--danger);
-        }
-
-        .relay-status:hover {
-            transform: scale(1.05);
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr); /* Time and Schedule Time in one row */
-            gap: 10px;
-            border-top: 1px solid var(--gray-light);
-            padding-top: 15px;
-        }
-
-        /* make each info box show label and value on one row */
-        .info-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 8px 10px;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-
-        .info-label {
-            font-size: 0.9rem;
-            color: var(--gray);
-            white-space: nowrap;
-            flex: 0 0 auto;
-        }
-
-        .info-value {
-            font-weight: 600;
-            color: var(--dark);
-            text-align: right;
-            flex: 1 1 auto;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        /* ensure time inputs/schedule controls stay inline inside the info-value area */
-        .time-inputs {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            width: 100%;
-        }
-
-        .time-inputs input, .time-inputs select {
-            flex: 1 1 auto;
-            min-width: 0; /* allow shrinking with ellipsis */
-        }
-
-        @media (max-width: 480px) {
-            /* stack label above value on very small screens */
-            .info-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .info-value {
-                text-align: left;
-                width: 100%;
-            }
-        }
-
-        /* ===== MODALS ===== */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: var(--border-radius);
-            width: 100%;
-            max-width: 500px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--gray-light);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-title {
             font-size: 1.3rem;
-            font-weight: 600;
-            color: var(--dark);
         }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            color: var(--gray);
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .modal-close:hover {
-            color: var(--danger);
-        }
-
-        .modal-body {
-            padding: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: var(--dark);
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--gray-light);
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: var(--transition);
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
-        }
-
-        .time-inputs {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .days-selector {
-            display: flex;
-            gap: 5px;
-            margin-top: 5px;
-        }
-
-        .day-check {
-            flex: 1;
-        }
-
-        .day-check label {
-            display: block;
-            text-align: center;
-            padding: 8px 4px;
-            background: #e9ecef;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: normal;
-            font-size: 0.8rem;
-            transition: var(--transition);
-        }
-
-        .day-check input {
-            display: none;
-        }
-
-        .day-check input:checked + label {
-            background: var(--primary);
-            color: white;
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: var(--transition);
-            flex: 1;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--secondary);
-        }
-
-        .btn-secondary {
-            background: var(--gray-light);
-            color: var(--dark);
-        }
-
-        .btn-secondary:hover {
-            background: #d8dde2;
-        }
-
-        /* ===== AUTH STYLES ===== */
-        .auth-container {
-            max-width: 400px;
-            margin: 40px auto;
-            background: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        .auth-header {
-            background: var(--primary);
-            color: white;
-            padding: 25px;
-            text-align: center;
-        }
-
-        .auth-header h2 {
-            font-size: 1.8rem;
-            margin-bottom: 5px;
-        }
-
-        .auth-form {
-            padding: 25px;
-        }
-
-        .auth-form-group {
-            margin-bottom: 20px;
-        }
-
-        .auth-form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: var(--dark);
-        }
-
-        .auth-form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid var(--gray-light);
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: var(--transition);
-        }
-
-        .auth-form-group input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
-        }
-
-        .auth-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            width: 100%;
-            transition: var(--transition);
-        }
-
-        .auth-btn:hover {
-            background: var(--secondary);
-        }
-
-        .auth-message {
-            margin-top: 15px;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .auth-message.error {
-            background: rgba(247, 37, 133, 0.1);
-            color: var(--danger);
-        }
-
-        .auth-message.success {
-            background: rgba(76, 201, 240, 0.2);
-            color: var(--success);
-        }
-
-        /* ===== NOTIFICATIONS ===== */
-        .notification {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 20px;
-            border-radius: 8px;
-            color: white;
-            font-weight: 600;
-            z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            animation: slideDown 0.3s ease;
-            min-width: 200px;
-            text-align: center;
-        }
-
-        .notification.success { background: var(--success); }
-        .notification.error { background: var(--danger); }
-        .notification.info { background: var(--info); }
-
-        @keyframes slideDown {
-            from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
-            to { transform: translateX(-50%) translateY(0); opacity: 1; }
-        }
-
-        @keyframes slideUp {
-            from { transform: translateX(-50%) translateY(0); opacity: 1; }
-            to { transform: translateX(-50%) translateY(-100%); opacity: 0; }
-        }
-
-        /* ===== RESPONSIVE DESIGN ===== */
-        @media (max-width: 768px) {
-            .devices-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .main-content {
-                padding: 15px;
-            }
-
-            .device-header {
-                padding: 12px 15px;
-            }
-
-            .device-content {
-                padding: 12px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .header {
-                padding: 12px 15px;
-            }
-
-            .logo {
-                font-size: 1.2rem;
-            }
-
-            .user-avatar {
-                width: 32px;
-                height: 32px;
-                font-size: 0.9rem;
-            }
-
-            .main-content {
-                padding: 10px;
-            }
-
-            .page-title h2 {
-                font-size: 1.3rem;
-            }
-
-            .relay-grid {
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-                gap: 10px;
-            }
-
-            .info-grid {
-                grid-template-columns: 1fr; /* stack on very small screens */
-                gap: 8px;
-            }
-        }
-
-        /* ===== UTILITY CLASSES ===== */
-        .hidden {
-            display: none !important;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .mb-10 {
-            margin-bottom: 10px;
-        }
-
-        .mb-15 {
-            margin-bottom: 15px;
-        }
-
-        .mb-20 {
-            margin-bottom: 20px;
-        }
-
-        /* ===== DEVICE TYPE CARDS (new) ===== */
-        .device-types {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin-bottom: 18px;
-        }
-
-        .type-card {
-            background: white;
-            border-radius: 12px;
-            padding: 14px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            box-shadow: var(--shadow);
-            cursor: pointer;
-            transition: transform 0.18s ease, box-shadow 0.18s ease;
-            text-align: center;
-            color: var(--dark);
-        }
-
-        .type-card.locked {
-            cursor: default;
-            filter: grayscale(20%);
-        }
-
-        .type-card:hover {
-            transform: translateY(-6px);
-        }
-
-        .type-card .type-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 10px;
-            background: linear-gradient(135deg,var(--primary),var(--primary-light));
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-size: 1.2rem;
-            box-shadow: 0 6px 18px rgba(67,97,238,0.18);
-        }
-
-        .type-card .type-title {
-            font-weight: 700;
-            font-size: 0.97rem;
-        }
-
-        .type-card .type-sub {
-            font-size: 0.82rem;
-            color: var(--gray);
-        }
-
-        .type-card .lock-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 8px;
-            background: rgba(0,0,0,0.06);
-            border-radius: 999px;
-            color: var(--gray);
-            font-size: 0.86rem;
-            margin-top: 6px;
-        }
-
-        @media (max-width: 920px) {
-            .device-types { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (max-width: 480px) {
-            .device-types { grid-template-columns: repeat(1, 1fr); }
-        }
-
-        /* ===== FOOTER NAV (new) ===== */
-        .app-footer {
-            width: 100%;
-            background: white;
-            box-shadow: 0 -6px 18px rgba(0,0,0,0.03);
-            position: sticky;
-            bottom: 0;
-            z-index: 200;
-        }
-
-        .footer-nav {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 8px 6px;
-            max-width: 980px;
-            margin: 0 auto;
-        }
-
-        .footer-link {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            padding: 6px 8px;
-            color: var(--gray);
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.85rem;
-            border-radius: 8px;
-        }
-
-        .footer-link.active,
-        .footer-link:hover {
-            color: var(--primary);
-            background: rgba(67,97,238,0.06);
-        }
-        /* Hide footer when login/signup (auth) section is visible */
-        #authSection:not(.hidden) ~ footer.app-footer {
-            display: none;
-        }
+    }
+
+    /* ===== UTILITY CLASSES ===== */
+    .hidden {
+        display: none !important;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .mb-10 {
+        margin-bottom: 10px;
+    }
+
+    .mb-15 {
+        margin-bottom: 15px;
+    }
+
+    .mb-20 {
+        margin-bottom: 20px;
+    }
+
+    /* ===== DEVICE TYPE CARDS ===== */
+    .device-types {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .type-card {
+        background: white;
+        border-radius: 12px;
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        box-shadow: var(--shadow);
+        cursor: pointer;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        text-align: center;
+        color: var(--dark);
+    }
+
+    .type-card.locked {
+        cursor: default;
+        filter: grayscale(20%);
+    }
+
+    .type-card:hover {
+        transform: translateY(-6px);
+    }
+
+    .type-card .type-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        background: linear-gradient(135deg,var(--primary),var(--primary-light));
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1.2rem;
+        box-shadow: 0 6px 18px rgba(67,97,238,0.18);
+    }
+
+    .type-card .type-title {
+        font-weight: 700;
+        font-size: 0.97rem;
+    }
+
+    .type-card .type-sub {
+        font-size: 0.82rem;
+        color: var(--gray);
+    }
+
+    .type-card .lock-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 8px;
+        background: rgba(0,0,0,0.06);
+        border-radius: 999px;
+        color: var(--gray);
+        font-size: 0.86rem;
+        margin-top: 6px;
+    }
+
+    @media (max-width: 920px) {
+        .device-types { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+        .device-types { grid-template-columns: repeat(1, 1fr); }
+    }
+
+    /* ===== FOOTER NAV ===== */
+    .app-footer {
+        width: 100%;
+        background: white;
+        box-shadow: 0 -6px 18px rgba(0,0,0,0.03);
+        position: sticky;
+        bottom: 0;
+        z-index: 200;
+    }
+
+    .footer-nav {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding: 8px 6px;
+        max-width: 980px;
+        margin: 0 auto;
+    }
+
+    .footer-link {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 8px;
+        color: var(--gray);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.85rem;
+        border-radius: 8px;
+    }
+
+    .footer-link.active,
+    .footer-link:hover {
+        color: var(--primary);
+        background: rgba(67,97,238,0.06);
+    }
+
+    /* Hide footer when login/signup (auth) section is visible */
+    #authSection:not(.hidden) ~ footer.app-footer {
+        display: none;
+    }
     </style>
 </head>
 <body>
@@ -886,72 +500,7 @@
              </div>
          </div>
      </div>
-
-    <!-- Add Device Modal -->
-    <div id="addDeviceModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Add New Device</h3>
-                <button class="modal-close" onclick="toggleDeviceForm()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">Device ID</label>
-                    <input type="text" id="newDeviceId" class="form-input" placeholder="esp32_device_01">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Device Name</label>
-                    <input type="text" id="newDeviceName" class="form-input" placeholder="Floor 1">
-                </div>
-                <div class="form-actions">
-                    <button class="btn btn-secondary" onclick="toggleDeviceForm()">Cancel</button>
-                    <button class="btn btn-primary" onclick="addNewDevice()">Add Device</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Device Modal -->
-    <div id="editDeviceModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Edit Device</h3>
-                <button class="modal-close" onclick="toggleEditModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">Device Name</label>
-                    <input type="text" id="editDeviceName" class="form-input">
-                </div>
-                <div class="form-actions">
-                    <button class="btn btn-secondary" onclick="toggleEditModal()">Cancel</button>
-                    <button class="btn btn-primary" onclick="saveDeviceEdit()">Save Changes</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="settingsModalTitle">Schedule Settings</h3>
-                <button class="modal-close" onclick="toggleSettingsModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div id="settingsContent">
-                    <!-- Settings content will be added dynamically -->
-                </div>
-            </div>
-        </div>
-    </div>
-
+    
     <script>
         // Firebase config
         const firebaseConfig = {
@@ -1011,25 +560,6 @@
                 }
             });
         });
-
-        // // Authentication functions
-        // function showSignup() {
-        //     const email = prompt("Enter your email for signup:");
-        //     const password = prompt("Enter your password:");
-            
-        //     if (!email || !password) {
-        //         showMessage('Please enter both email and password', 'error');
-        //         return;
-        //     }
-
-        //     auth.createUserWithEmailAndPassword(email, password)
-        //         .then((userCredential) => {
-        //             showMessage('Account created successfully!', 'success');
-        //         })
-        //         .catch((error) => {
-        //             showMessage(error.message, 'error');
-        //         });
-        // }
 
         function login() {
             const email = document.getElementById('loginEmail').value;
@@ -1100,562 +630,13 @@
                             });
                         });
                     }
-
-                    initializeDashboard();
                 })
                 .catch((error) => {
                     console.error('Error loading user devices:', error);
                 });
         }
 
-        // Dashboard functions
-        function initializeDashboard() {
-            // Devices grid removed from UI. Guard any code that relied on it.
-            const devicesGrid = document.getElementById('devicesGrid');
-            if (!devicesGrid) {
-                // If you still want to load devices for other purposes, do it here.
-                // For now, simply attach listeners (without rendering cards).
-                devices.forEach(device => {
-                    setupDeviceListeners(device.id);
-                });
-                return;
-            }
-
-            devicesGrid.innerHTML = '';
-
-            if (devices.length === 0) {
-                devicesGrid.innerHTML = `
-                    <div class="text-center" style="grid-column: 1 / -1; padding: 40px 20px;">
-                        <i class="fas fa-microchip" style="font-size: 3rem; color: var(--gray-light); margin-bottom: 15px;"></i>
-                        <h3 style="color: var(--gray); margin-bottom: 10px;">No Devices Added</h3>
-                        <p style="color: var(--gray);">Add your first device to get started</p>
-                    </div>
-                `;
-                return;
-            }
-
-            devices.forEach(device => {
-                createDeviceCard(device);
-                setupDeviceListeners(device.id);
-            });
-        }
-
-        function createDeviceCard(device) {
-            // Do not render device cards when the devices grid was removed.
-            const devicesGrid = document.getElementById('devicesGrid');
-            if (!devicesGrid) return;
-
-            const deviceCard = document.createElement('div');
-            deviceCard.className = 'device-card';
-            deviceCard.id = `device-${device.id}`;
-            deviceCard.innerHTML = `
-                <div class="device-header">
-                    <div class="device-name">
-                        <i class="fas fa-home"></i>
-                        <span>${device.name}</span>
-                    </div>
-                    <div class="device-actions">
-                        <button class="action-btn" onclick="toggleEditModal('${device.id}')">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-btn" onclick="toggleSettingsModal('${device.id}')">
-                            <i class="fas fa-cog"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="device-content">
-                    <div class="relay-grid">
-                        <div class="relay-item">
-                            <div class="relay-info">
-                                <div class="relay-label">Relay 1</div>
-                                <div class="relay-status status-inactive" id="relay1-status-${device.id}" onclick="toggleRelayState('${device.id}', 1)">
-                                    Inactive
-                                </div>
-                            </div>
-                        </div>
-                        <div class="relay-item">
-                            <div class="relay-info">
-                                <div class="relay-label">Relay 2</div>
-                                <div class="relay-status status-inactive" id="relay2-status-${device.id}" onclick="toggleRelayState('${device.id}', 2)">
-                                    Inactive
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <div class="info-label">Time</div>
-                            <div class="info-value" id="current-time-${device.id}">--:--</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">Schedule Time</div>
-                            <div class="info-value" id="schedule-time-${device.id}">--:--</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            devicesGrid.appendChild(deviceCard);
-        }
-
-        function setupDeviceListeners(deviceId) {
-            const devicePath = `devices/${deviceId}`;
-
-            // Real-time status updates
-            database.ref(devicePath).on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    updateDeviceStatus(deviceId, data);
-                }
-            });
-        }
-
-        function toggleRelayState(deviceId, relayNumber) {
-            // Get current state
-            const relayElement = document.getElementById(`relay${relayNumber}-status-${deviceId}`);
-            const isActive = relayElement.classList.contains('status-active');
-            const newState = !isActive;
-
-            // Send command to Firebase
-            sendCommand(deviceId, relayNumber, newState);
-        }
-
-        function updateDeviceStatus(deviceId, data) {
-            // Update relay states
-            const relay1State = data.relays && data.relays[1] ? true : false;
-            const relay2State = data.relays && data.relays[2] ? true : false;
-
-            const relay1Element = document.getElementById(`relay1-status-${deviceId}`);
-            const relay2Element = document.getElementById(`relay2-status-${deviceId}`);
-
-            if (relay1Element) {
-                relay1Element.textContent = relay1State ? 'Active' : 'Inactive';
-                relay1Element.className = `relay-status ${relay1State ? 'status-active' : 'status-inactive'}`;
-            }
-
-            if (relay2Element) {
-                relay2Element.textContent = relay2State ? 'Active' : 'Inactive';
-                relay2Element.className = `relay-status ${relay2State ? 'status-active' : 'status-inactive'}`;
-            }
-
-            // Update current time
-            if (data.currentTime) {
-                const timeElement = document.getElementById(`current-time-${deviceId}`);
-                if (timeElement) {
-                    timeElement.textContent = data.currentTime;
-                }
-            }
-
-            // Update schedule time
-            if (data.currentSchedule) {
-                let scheduleTime = '--:--';
-                if (data.currentSchedule.relay1 && data.currentSchedule.relay1.enabled) {
-                    scheduleTime = data.currentSchedule.relay1.startTime + ' - ' + data.currentSchedule.relay1.endTime;
-                } else if (data.currentSchedule.relay2 && data.currentSchedule.relay2.enabled) {
-                    scheduleTime = data.currentSchedule.relay2.startTime + ' - ' + data.currentSchedule.relay2.endTime;
-                }
-                
-                const scheduleElement = document.getElementById(`schedule-time-${deviceId}`);
-                if (scheduleElement) {
-                    scheduleElement.textContent = scheduleTime;
-                }
-            }
-        }
-
-        function sendCommand(deviceId, relay, state) {
-            // Check device ownership
-            database.ref(`devices/${deviceId}/owner`).once('value')
-                .then(snapshot => {
-                    if (snapshot.val() === userUid) {
-                        database.ref(`devices/${deviceId}/immediateCommands/relay${relay}`).set(state)
-                            .then(() => {
-                                showMessage(`Relay ${relay} ${state ? 'activated' : 'deactivated'}`, 'success');
-                            })
-                            .catch((error) => {
-                                showMessage(`Command failed`, 'error');
-                            });
-                    } else {
-                        showMessage(`Access denied: this device does not belong to you.`, 'error');
-                    }
-                })
-                .catch(error => {
-                    showMessage(`Error checking device ownership`, 'error');
-                });
-        }
-
         // Modal functions
-        function toggleDeviceForm() {
-            const modal = document.getElementById('addDeviceModal');
-            modal.classList.toggle('active');
-        }
-
-        function toggleEditModal(deviceId) {
-            const modal = document.getElementById('editDeviceModal');
-
-            if (deviceId) {
-                currentEditingDevice = deviceId;
-                const device = devices.find(d => d.id === deviceId);
-
-                if (device) {
-                    document.getElementById('editDeviceName').value = device.name;
-                }
-            }
-
-            modal.classList.toggle('active');
-        }
-
-        function toggleSettingsModal(deviceId) {
-            const modal = document.getElementById('settingsModal');
-            const modalTitle = document.getElementById('settingsModalTitle');
-            const settingsContent = document.getElementById('settingsContent');
-
-            if (deviceId) {
-                currentSettingsDevice = deviceId;
-                const device = devices.find(d => d.id === deviceId);
-
-                if (device) {
-                    modalTitle.textContent = `Schedule Settings for ${device.name}`;
-                    
-                    // Load existing schedules if available
-                    loadSchedulesForModal(deviceId);
-                }
-            }
-
-            modal.classList.toggle('active');
-        }
-
-        function loadSchedulesForModal(deviceId) {
-            database.ref(`devices/${deviceId}/currentSchedule`).once('value')
-                .then((snapshot) => {
-                    const schedules = snapshot.val();
-                    const settingsContent = document.getElementById('settingsContent');
-                    
-                    settingsContent.innerHTML = `
-                        <div class="form-group">
-                            <h4 style="margin-bottom: 15px; color: var(--primary);">Relay 1 Schedule</h4>
-                            <div class="form-group">
-                                <label class="form-label">Enable Schedule</label>
-                                <select class="form-input" id="relay1-enabled-${deviceId}">
-                                    <option value="true">Enabled</option>
-                                    <option value="false">Disabled</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Time Range</label>
-                                <div class="time-inputs">
-                                    <input type="time" class="form-input" id="relay1-start-${deviceId}" value="09:00">
-                                    <span>to</span>
-                                    <input type="time" class="form-input" id="relay1-end-${deviceId}" value="17:00">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Active Days</label>
-                                <div class="days-selector">
-                                    <div class="day-check">
-                                        <input type="checkbox" id="mon1-${deviceId}" checked>
-                                        <label for="mon1-${deviceId}">Mon</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="tue1-${deviceId}" checked>
-                                        <label for="tue1-${deviceId}">Tue</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="wed1-${deviceId}" checked>
-                                        <label for="wed1-${deviceId}">Wed</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="thu1-${deviceId}" checked>
-                                        <label for="thu1-${deviceId}">Thu</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="fri1-${deviceId}" checked>
-                                        <label for="fri1-${deviceId}">Fri</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="sat1-${deviceId}">
-                                        <label for="sat1-${deviceId}">Sat</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="sun1-${deviceId}">
-                                        <label for="sun1-${deviceId}">Sun</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Exclude Dates (YYYY-MM-DD):</label>
-                                <input type="text" class="form-input" id="relay1-excludeDates-${deviceId}" 
-                                       placeholder="2024-12-25, 2024-01-01">
-                                <small style="color: var(--gray); font-size: 0.7em;">Comma separated dates to exclude</small>
-                            </div>
-                            <button class="btn btn-primary" onclick="saveSchedule('${deviceId}', 1)" style="width: 100%; margin-bottom: 20px;">
-                                Save Schedule for Relay 1
-                            </button>
-                        </div>
-
-                        <div class="form-group">
-                            <h4 style="margin-bottom: 15px; color: var(--primary);">Relay 2 Schedule</h4>
-                            <div class="form-group">
-                                <label class="form-label">Enable Schedule</label>
-                                <select class="form-input" id="relay2-enabled-${deviceId}">
-                                    <option value="true">Enabled</option>
-                                    <option value="false">Disabled</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Time Range</label>
-                                <div class="time-inputs">
-                                    <input type="time" class="form-input" id="relay2-start-${deviceId}" value="09:00">
-                                    <span>to</span>
-                                    <input type="time" class="form-input" id="relay2-end-${deviceId}" value="17:00">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Active Days</label>
-                                <div class="days-selector">
-                                    <div class="day-check">
-                                        <input type="checkbox" id="mon2-${deviceId}" checked>
-                                        <label for="mon2-${deviceId}">Mon</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="tue2-${deviceId}" checked>
-                                        <label for="tue2-${deviceId}">Tue</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="wed2-${deviceId}" checked>
-                                        <label for="wed2-${deviceId}">Wed</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="thu2-${deviceId}" checked>
-                                        <label for="thu2-${deviceId}">Thu</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="fri2-${deviceId}" checked>
-                                        <label for="fri2-${deviceId}">Fri</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="sat2-${deviceId}">
-                                        <label for="sat2-${deviceId}">Sat</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="sun2-${deviceId}">
-                                        <label for="sun2-${deviceId}">Sun</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Exclude Dates (YYYY-MM-DD):</label>
-                                <input type="text" class="form-input" id="relay2-excludeDates-${deviceId}" 
-                                       placeholder="2024-12-25, 2024-01-01">
-                                <small style="color: var(--gray); font-size: 0.7em;">Comma separated dates to exclude</small>
-                            </div>
-                            <button class="btn btn-primary" onclick="saveSchedule('${deviceId}', 2)" style="width: 100%;">
-                                Save Schedule for Relay 2
-                            </button>
-                        </div>
-                    `;
-
-                    // Populate with existing schedule data if available
-                    if (schedules) {
-                        if (schedules.relay1) {
-                            document.getElementById(`relay1-enabled-${deviceId}`).value = schedules.relay1.enabled.toString();
-                            if (schedules.relay1.startTime) document.getElementById(`relay1-start-${deviceId}`).value = schedules.relay1.startTime;
-                            if (schedules.relay1.endTime) document.getElementById(`relay1-end-${deviceId}`).value = schedules.relay1.endTime;
-                            if (schedules.relay1.excludeDates) document.getElementById(`relay1-excludeDates-${deviceId}`).value = schedules.relay1.excludeDates;
-                            
-                            // Set days
-                            if (schedules.relay1.days) {
-                                const daysArray = schedules.relay1.days.split(',');
-                                const dayIds = ['mon1', 'tue1', 'wed1', 'thu1', 'fri1', 'sat1', 'sun1'];
-                                dayIds.forEach((dayId, index) => {
-                                    const dayNumber = (index + 1).toString();
-                                    document.getElementById(`${dayId}-${deviceId}`).checked = daysArray.includes(dayNumber);
-                                });
-                            }
-                        }
-                        
-                        if (schedules.relay2) {
-                            document.getElementById(`relay2-enabled-${deviceId}`).value = schedules.relay2.enabled.toString();
-                            if (schedules.relay2.startTime) document.getElementById(`relay2-start-${deviceId}`).value = schedules.relay2.startTime;
-                            if (schedules.relay2.endTime) document.getElementById(`relay2-end-${deviceId}`).value = schedules.relay2.endTime;
-                            if (schedules.relay2.excludeDates) document.getElementById(`relay2-excludeDates-${deviceId}`).value = schedules.relay2.excludeDates;
-                            
-                            // Set days
-                            if (schedules.relay2.days) {
-                                const daysArray = schedules.relay2.days.split(',');
-                                const dayIds = ['mon2', 'tue2', 'wed2', 'thu2', 'fri2', 'sat2', 'sun2'];
-                                dayIds.forEach((dayId, index) => {
-                                    const dayNumber = (index + 1).toString();
-                                    document.getElementById(`${dayId}-${deviceId}`).checked = daysArray.includes(dayNumber);
-                                });
-                            }
-                        }
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error loading schedules:', error);
-                });
-        }
-
-        function saveSchedule(deviceId, relay) {
-            const enabled = document.getElementById(`relay${relay}-enabled-${deviceId}`).value === 'true';
-            const start = document.getElementById(`relay${relay}-start-${deviceId}`).value;
-            const end = document.getElementById(`relay${relay}-end-${deviceId}`).value;
-            const excludeDates = document.getElementById(`relay${relay}-excludeDates-${deviceId}`).value;
-
-            // Get selected days
-            const days = [];
-            const dayNames = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-            dayNames.forEach((day, index) => {
-                if (document.getElementById(`${day}${relay}-${deviceId}`).checked) {
-                    days.push((index + 1).toString());
-                }
-            });
-
-            const scheduleData = {
-                enabled: enabled,
-                startTime: start,
-                endTime: end,
-                days: days.join(','),
-                excludeDates: excludeDates
-            };
-
-            database.ref(`devices/${deviceId}/currentSchedule/relay${relay}`).set(scheduleData)
-                .then(() => {
-                    showMessage(`Schedule saved for Relay ${relay}`, 'success');
-                })
-                .catch((error) => {
-                    showMessage(`Failed to save schedule`, 'error');
-                });
-        }
-
-        function saveDeviceEdit() {
-            if (!currentEditingDevice) return;
-
-            const deviceName = document.getElementById('editDeviceName').value;
-
-            // Update in Firebase
-            database.ref(`users/${userUid}/devices/${currentEditingDevice}`).update({
-                name: deviceName
-            })
-            .then(() => {
-                // Update local data
-                const deviceIndex = devices.findIndex(d => d.id === currentEditingDevice);
-                if (deviceIndex !== -1) {
-                    devices[deviceIndex].name = deviceName;
-
-                    // Refresh the device card
-                    const deviceCard = document.getElementById(`device-${currentEditingDevice}`);
-                    if (deviceCard) {
-                        const nameElement = deviceCard.querySelector('.device-name span');
-                        if (nameElement) {
-                            nameElement.textContent = deviceName;
-                        }
-                    }
-                }
-
-                toggleEditModal();
-                showMessage('Device updated successfully', 'success');
-            })
-            .catch(error => {
-                showMessage('Error updating device: ' + error.message, 'error');
-            });
-        }
-
-        function addNewDevice() {
-            const deviceId = document.getElementById('newDeviceId').value.trim();
-            const deviceName = document.getElementById('newDeviceName').value.trim();
-
-            if (!deviceId || !deviceName) {
-                showMessage('Please enter both Device ID and Name', 'error');
-                return;
-            }
-
-            // Check if device already exists in user's devices
-            if (devices.find(d => d.id === deviceId)) {
-                showMessage('Device ID already exists in your devices', 'error');
-                return;
-            }
-
-            // Check if device exists in Firebase and set ownership
-            database.ref(`devices/${deviceId}`).once('value')
-                .then(snapshot => {
-                    if (snapshot.exists()) {
-                        // Device exists, check if it's already owned
-                        const deviceData = snapshot.val();
-                        if (deviceData.owner && deviceData.owner !== userUid) {
-                            showMessage('Device is already owned by another user', 'error');
-                            return;
-                        }
-
-                        // Set ownership
-                        database.ref(`devices/${deviceId}/owner`).set(userUid)
-                            .then(() => {
-                                // Add device to user's device list
-                                database.ref(`users/${userUid}/devices/${deviceId}`).set({
-                                    name: deviceName,
-                                    addedAt: new Date().toISOString()
-                                })
-                                .then(() => {
-                                    // Add new device to local array
-                                    const newDevice = { id: deviceId, name: deviceName };
-                                    devices.push(newDevice);
-
-                                    // Create card for new device
-                                    createDeviceCard(newDevice);
-                                    setupDeviceListeners(deviceId);
-
-                                    // Reset form and close modal
-                                    document.getElementById('newDeviceId').value = '';
-                                    document.getElementById('newDeviceName').value = '';
-                                    toggleDeviceForm();
-
-                                    showMessage(`Device ${deviceName} added successfully`, 'success');
-                                });
-                            })
-                            .catch(error => {
-                                showMessage(`Error setting device ownership: ${error.message}`, 'error');
-                            });
-                    } else {
-                        // Device doesn't exist, create it
-                        database.ref(`devices/${deviceId}`).set({
-                            owner: userUid,
-                            name: deviceName,
-                            created: new Date().toISOString(),
-                            online: false
-                        })
-                        .then(() => {
-                            // Add device to user's device list
-                            database.ref(`users/${userUid}/devices/${deviceId}`).set({
-                                name: deviceName,
-                                addedAt: new Date().toISOString()
-                            })
-                            .then(() => {
-                                // Add new device to local array
-                                const newDevice = { id: deviceId, name: deviceName };
-                                devices.push(newDevice);
-
-                                // Create card for new device
-                                createDeviceCard(newDevice);
-                                setupDeviceListeners(deviceId);
-
-                                // Reset form and close modal
-                                document.getElementById('newDeviceId').value = '';
-                                document.getElementById('newDeviceName').value = '';
-                                toggleDeviceForm();
-
-                                showMessage(`Device ${deviceName} created and added successfully`, 'success');
-                            });
-                        })
-                        .catch(error => {
-                            showMessage(`Error creating device: ${error.message}`, 'error');
-                        });
-                    }
-                })
-                .catch(error => {
-                    showMessage(`Error checking device: ${error.message}`, 'error');
-                });
-        }
-
         function showMessage(message, type) {
             // Remove existing notifications
             document.querySelectorAll('.notification').forEach(notif => {
