@@ -803,6 +803,32 @@
             pointer-events: none;
             background: transparent;
         }
+
+        /* ===== LOADING STATES ===== */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .device-checking {
+            background: var(--warning);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
     </style>
 </head>
 <body>
@@ -883,14 +909,33 @@
                 <div class="form-group">
                     <label class="form-label">Device ID</label>
                     <input type="text" id="newDeviceId" class="form-input" placeholder="esp32_device_01">
+                    <small style="color: var(--gray); font-size: 0.8rem;">Enter the exact Device ID used by your ESP32</small>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Device Name</label>
                     <input type="text" id="newDeviceName" class="form-input" placeholder="Floor 1">
                 </div>
+                
+                <!-- Device Checking Section -->
+                <div id="deviceCheckSection" class="hidden">
+                    <div class="form-group">
+                        <div class="device-checking">
+                            <div class="loading"></div>
+                            <span>Checking device configuration...</span>
+                        </div>
+                    </div>
+                    <div id="deviceInfo" class="form-group hidden">
+                        <div style="background: var(--light); padding: 12px; border-radius: 8px;">
+                            <h4 style="margin-bottom: 8px; color: var(--primary);">Device Found</h4>
+                            <div id="relayCountInfo" style="font-weight: 600;"></div>
+                            <div id="deviceStatus" style="font-size: 0.9rem; color: var(--gray);"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-actions">
                     <button class="btn btn-secondary" onclick="toggleDeviceForm()">Cancel</button>
-                    <button class="btn btn-primary" onclick="addNewDevice()">Add Device</button>
+                    <button class="btn btn-primary" id="addDeviceBtn" onclick="addNewDevice()">Add Device</button>
                 </div>
             </div>
         </div>
@@ -958,6 +1003,7 @@
         let userUid = null;
         let currentEditingDevice = null;
         let currentSettingsDevice = null;
+        let currentCheckingDevice = null;
 
         // Check authentication state on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -993,7 +1039,118 @@
                     showMessage('Authentication error occurred', 'error');
                 }
             });
+
+            // Add event listener for device ID input to check device when user types
+            const deviceIdInput = document.getElementById('newDeviceId');
+            if (deviceIdInput) {
+                deviceIdInput.addEventListener('input', function() {
+                    const deviceId = this.value.trim();
+                    if (deviceId.length > 3) {
+                        checkDeviceConfiguration(deviceId);
+                    } else {
+                        hideDeviceCheckSection();
+                    }
+                });
+            }
         });
+
+        // Device configuration checking
+        function checkDeviceConfiguration(deviceId) {
+            if (!deviceId) return;
+
+            currentCheckingDevice = deviceId;
+            showDeviceCheckSection();
+            
+            // Check if device exists and get its configuration
+            database.ref(`devices/${deviceId}`).once('value')
+                .then((snapshot) => {
+                    const deviceData = snapshot.val();
+                    
+                    if (deviceData) {
+                        // Device exists, check relay configuration
+                        const relayCount = detectRelayCount(deviceData);
+                        const isOnline = deviceData.online || false;
+                        
+                        showDeviceInfo(relayCount, isOnline, true);
+                    } else {
+                        // Device doesn't exist yet
+                        showDeviceInfo(0, false, false);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error checking device:', error);
+                    showDeviceInfo(0, false, false, 'Error checking device');
+                });
+        }
+
+        function detectRelayCount(deviceData) {
+            // Method 1: Check if relays object exists and count them
+            if (deviceData.relays && typeof deviceData.relays === 'object') {
+                return Object.keys(deviceData.relays).length;
+            }
+            
+            // Method 2: Check if relay configuration exists
+            if (deviceData.relayCount) {
+                return parseInt(deviceData.relayCount);
+            }
+            
+            // Method 3: Check for individual relay states
+            let count = 0;
+            for (let i = 1; i <= 8; i++) { // Check up to 8 relays
+                if (deviceData[`relay${i}`] !== undefined || 
+                    deviceData[`relay${i}State`] !== undefined ||
+                    (deviceData.relays && deviceData.relays[i] !== undefined)) {
+                    count = i;
+                } else {
+                    break;
+                }
+            }
+            
+            return count > 0 ? count : 2; // Default to 2 if cannot detect
+        }
+
+        function showDeviceCheckSection() {
+            const checkSection = document.getElementById('deviceCheckSection');
+            const deviceInfo = document.getElementById('deviceInfo');
+            checkSection.classList.remove('hidden');
+            deviceInfo.classList.add('hidden');
+        }
+
+        function hideDeviceCheckSection() {
+            const checkSection = document.getElementById('deviceCheckSection');
+            const deviceInfo = document.getElementById('deviceInfo');
+            checkSection.classList.add('hidden');
+            deviceInfo.classList.add('hidden');
+        }
+
+        function showDeviceInfo(relayCount, isOnline, deviceExists, error = null) {
+            const deviceInfo = document.getElementById('deviceInfo');
+            const relayCountInfo = document.getElementById('relayCountInfo');
+            const deviceStatus = document.getElementById('deviceStatus');
+            const addDeviceBtn = document.getElementById('addDeviceBtn');
+            
+            deviceInfo.classList.remove('hidden');
+            
+            if (error) {
+                relayCountInfo.innerHTML = `<span style="color: var(--danger);">Error: ${error}</span>`;
+                deviceStatus.textContent = 'Cannot check device status';
+                addDeviceBtn.disabled = true;
+                return;
+            }
+            
+            if (!deviceExists) {
+                relayCountInfo.innerHTML = `<span style="color: var(--warning);">New Device - Relay count will be detected when device comes online</span>`;
+                deviceStatus.textContent = 'Device not yet registered in system';
+                addDeviceBtn.disabled = false;
+                return;
+            }
+            
+            // Device exists, show information
+            relayCountInfo.textContent = `Detected ${relayCount} relay${relayCount !== 1 ? 's' : ''}`;
+            deviceStatus.textContent = `Status: ${isOnline ? 'Online' : 'Offline'}`;
+            deviceStatus.style.color = isOnline ? 'var(--success)' : 'var(--danger)';
+            addDeviceBtn.disabled = false;
+        }
 
         // Authentication functions
         function showSignup() {
@@ -1076,7 +1233,8 @@
                         Object.keys(userDevices).forEach(deviceId => {
                             devices.push({
                                 id: deviceId,
-                                name: userDevices[deviceId].name
+                                name: userDevices[deviceId].name,
+                                relayCount: userDevices[deviceId].relayCount || 2 // Default to 2 if not set
                             });
                         });
                     }
@@ -1116,11 +1274,30 @@
             const deviceCard = document.createElement('div');
             deviceCard.className = 'device-card';
             deviceCard.id = `device-${device.id}`;
+            
+            // Generate relay items based on relayCount
+            let relayItemsHTML = '';
+            for (let i = 1; i <= device.relayCount; i++) {
+                relayItemsHTML += `
+                    <div class="relay-item">
+                        <div class="relay-info">
+                            <div class="relay-label">Relay ${i}</div>
+                            <div class="relay-status status-inactive" id="relay${i}-status-${device.id}" onclick="toggleRelayState('${device.id}', ${i})">
+                                Inactive
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
             deviceCard.innerHTML = `
                 <div class="device-header">
                     <div class="device-name">
                         <i class="fas fa-home"></i>
                         <span>${device.name}</span>
+                        <small style="font-size: 0.7rem; color: var(--gray); margin-left: 8px;">
+                            (${device.relayCount} relay${device.relayCount !== 1 ? 's' : ''})
+                        </small>
                     </div>
                     <div class="device-actions">
                         <button class="action-btn" onclick="toggleEditModal('${device.id}')">
@@ -1133,22 +1310,7 @@
                 </div>
                 <div class="device-content">
                     <div class="relay-grid">
-                        <div class="relay-item">
-                            <div class="relay-info">
-                                <div class="relay-label">Relay 1</div>
-                                <div class="relay-status status-inactive" id="relay1-status-${device.id}" onclick="toggleRelayState('${device.id}', 1)">
-                                    Inactive
-                                </div>
-                            </div>
-                        </div>
-                        <div class="relay-item">
-                            <div class="relay-info">
-                                <div class="relay-label">Relay 2</div>
-                                <div class="relay-status status-inactive" id="relay2-status-${device.id}" onclick="toggleRelayState('${device.id}', 2)">
-                                    Inactive
-                                </div>
-                            </div>
-                        </div>
+                        ${relayItemsHTML}
                     </div>
                     <div class="info-grid">
                         <div class="info-item">
@@ -1174,8 +1336,33 @@
                 const data = snapshot.val();
                 if (data) {
                     updateDeviceStatus(deviceId, data);
+                    
+                    // Update relay count if changed
+                    const device = devices.find(d => d.id === deviceId);
+                    if (device) {
+                        const newRelayCount = detectRelayCount(data);
+                        if (newRelayCount !== device.relayCount) {
+                            device.relayCount = newRelayCount;
+                            // Update in user's device list
+                            database.ref(`users/${userUid}/devices/${deviceId}/relayCount`).set(newRelayCount);
+                            // Refresh device card
+                            refreshDeviceCard(deviceId);
+                        }
+                    }
                 }
             });
+        }
+
+        function refreshDeviceCard(deviceId) {
+            const device = devices.find(d => d.id === deviceId);
+            if (device) {
+                const existingCard = document.getElementById(`device-${deviceId}`);
+                if (existingCard) {
+                    existingCard.remove();
+                }
+                createDeviceCard(device);
+                setupDeviceListeners(deviceId);
+            }
         }
 
         function toggleRelayState(deviceId, relayNumber) {
@@ -1189,21 +1376,17 @@
         }
 
         function updateDeviceStatus(deviceId, data) {
-            // Update relay states
-            const relay1State = data.relays && data.relays[1] ? true : false;
-            const relay2State = data.relays && data.relays[2] ? true : false;
+            const device = devices.find(d => d.id === deviceId);
+            if (!device) return;
 
-            const relay1Element = document.getElementById(`relay1-status-${deviceId}`);
-            const relay2Element = document.getElementById(`relay2-status-${deviceId}`);
-
-            if (relay1Element) {
-                relay1Element.textContent = relay1State ? 'Active' : 'Inactive';
-                relay1Element.className = `relay-status ${relay1State ? 'status-active' : 'status-inactive'}`;
-            }
-
-            if (relay2Element) {
-                relay2Element.textContent = relay2State ? 'Active' : 'Inactive';
-                relay2Element.className = `relay-status ${relay2State ? 'status-active' : 'status-inactive'}`;
+            // Update relay states for all detected relays
+            for (let i = 1; i <= device.relayCount; i++) {
+                const relayElement = document.getElementById(`relay${i}-status-${deviceId}`);
+                if (relayElement) {
+                    const relayState = data.relays && data.relays[i] ? true : false;
+                    relayElement.textContent = relayState ? 'Active' : 'Inactive';
+                    relayElement.className = `relay-status ${relayState ? 'status-active' : 'status-inactive'}`;
+                }
             }
 
             // Update current time
@@ -1217,10 +1400,13 @@
             // Update schedule time
             if (data.currentSchedule) {
                 let scheduleTime = '--:--';
-                if (data.currentSchedule.relay1 && data.currentSchedule.relay1.enabled) {
-                    scheduleTime = data.currentSchedule.relay1.startTime + ' - ' + data.currentSchedule.relay1.endTime;
-                } else if (data.currentSchedule.relay2 && data.currentSchedule.relay2.enabled) {
-                    scheduleTime = data.currentSchedule.relay2.startTime + ' - ' + data.currentSchedule.relay2.endTime;
+                // Find the first enabled schedule
+                for (let i = 1; i <= device.relayCount; i++) {
+                    if (data.currentSchedule[`relay${i}`] && data.currentSchedule[`relay${i}`].enabled) {
+                        const schedule = data.currentSchedule[`relay${i}`];
+                        scheduleTime = schedule.startTime + ' - ' + schedule.endTime;
+                        break;
+                    }
                 }
                 
                 const scheduleElement = document.getElementById(`schedule-time-${deviceId}`);
@@ -1255,6 +1441,13 @@
         function toggleDeviceForm() {
             const modal = document.getElementById('addDeviceModal');
             modal.classList.toggle('active');
+            
+            // Reset form when opening
+            if (modal.classList.contains('active')) {
+                document.getElementById('newDeviceId').value = '';
+                document.getElementById('newDeviceName').value = '';
+                hideDeviceCheckSection();
+            }
         }
 
         function toggleEditModal(deviceId) {
@@ -1285,176 +1478,108 @@
                     modalTitle.textContent = `Schedule Settings for ${device.name}`;
                     
                     // Load existing schedules if available
-                    loadSchedulesForModal(deviceId);
+                    loadSchedulesForModal(deviceId, device.relayCount);
                 }
             }
 
             modal.classList.toggle('active');
         }
 
-        function loadSchedulesForModal(deviceId) {
+        function loadSchedulesForModal(deviceId, relayCount) {
             database.ref(`devices/${deviceId}/currentSchedule`).once('value')
                 .then((snapshot) => {
                     const schedules = snapshot.val();
                     const settingsContent = document.getElementById('settingsContent');
                     
-                    settingsContent.innerHTML = `
-                        <div class="form-group">
-                            <h4 style="margin-bottom: 15px; color: var(--primary);">Relay 1 Schedule</h4>
+                    let settingsHTML = '';
+                    
+                    // Generate settings for each relay
+                    for (let i = 1; i <= relayCount; i++) {
+                        settingsHTML += `
                             <div class="form-group">
-                                <label class="form-label">Enable Schedule</label>
-                                <select class="form-input" id="relay1-enabled-${deviceId}">
-                                    <option value="true">Enabled</option>
-                                    <option value="false">Disabled</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Time Range</label>
-                                <div class="time-inputs">
-                                    <input type="time" class="form-input" id="relay1-start-${deviceId}" value="09:00">
-                                    <span>to</span>
-                                    <input type="time" class="form-input" id="relay1-end-${deviceId}" value="17:00">
+                                <h4 style="margin-bottom: 15px; color: var(--primary);">Relay ${i} Schedule</h4>
+                                <div class="form-group">
+                                    <label class="form-label">Enable Schedule</label>
+                                    <select class="form-input" id="relay${i}-enabled-${deviceId}">
+                                        <option value="true">Enabled</option>
+                                        <option value="false">Disabled</option>
+                                    </select>
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Active Days</label>
-                                <div class="days-selector">
-                                    <div class="day-check">
-                                        <input type="checkbox" id="mon1-${deviceId}" checked>
-                                        <label for="mon1-${deviceId}">Mon</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="tue1-${deviceId}" checked>
-                                        <label for="tue1-${deviceId}">Tue</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="wed1-${deviceId}" checked>
-                                        <label for="wed1-${deviceId}">Wed</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="thu1-${deviceId}" checked>
-                                        <label for="thu1-${deviceId}">Thu</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="fri1-${deviceId}" checked>
-                                        <label for="fri1-${deviceId}">Fri</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="sat1-${deviceId}">
-                                        <label for="sat1-${deviceId}">Sat</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="sun1-${deviceId}">
-                                        <label for="sun1-${deviceId}">Sun</label>
+                                <div class="form-group">
+                                    <label class="form-label">Time Range</label>
+                                    <div class="time-inputs">
+                                        <input type="time" class="form-input" id="relay${i}-start-${deviceId}" value="09:00">
+                                        <span>to</span>
+                                        <input type="time" class="form-input" id="relay${i}-end-${deviceId}" value="17:00">
                                     </div>
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Exclude Dates (YYYY-MM-DD):</label>
-                                <input type="text" class="form-input" id="relay1-excludeDates-${deviceId}" 
-                                       placeholder="2024-12-25, 2024-01-01">
-                                <small style="color: var(--gray); font-size: 0.7em;">Comma separated dates to exclude</small>
-                            </div>
-                            <button class="btn btn-primary" onclick="saveSchedule('${deviceId}', 1)" style="width: 100%; margin-bottom: 20px;">
-                                Save Schedule for Relay 1
-                            </button>
-                        </div>
-
-                        <div class="form-group">
-                            <h4 style="margin-bottom: 15px; color: var(--primary);">Relay 2 Schedule</h4>
-                            <div class="form-group">
-                                <label class="form-label">Enable Schedule</label>
-                                <select class="form-input" id="relay2-enabled-${deviceId}">
-                                    <option value="true">Enabled</option>
-                                    <option value="false">Disabled</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Time Range</label>
-                                <div class="time-inputs">
-                                    <input type="time" class="form-input" id="relay2-start-${deviceId}" value="09:00">
-                                    <span>to</span>
-                                    <input type="time" class="form-input" id="relay2-end-${deviceId}" value="17:00">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Active Days</label>
-                                <div class="days-selector">
-                                    <div class="day-check">
-                                        <input type="checkbox" id="mon2-${deviceId}" checked>
-                                        <label for="mon2-${deviceId}">Mon</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="tue2-${deviceId}" checked>
-                                        <label for="tue2-${deviceId}">Tue</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="wed2-${deviceId}" checked>
-                                        <label for="wed2-${deviceId}">Wed</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="thu2-${deviceId}" checked>
-                                        <label for="thu2-${deviceId}">Thu</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="fri2-${deviceId}" checked>
-                                        <label for="fri2-${deviceId}">Fri</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="sat2-${deviceId}">
-                                        <label for="sat2-${deviceId}">Sat</label>
-                                    </div>
-                                    <div class="day-check">
-                                        <input type="checkbox" id="sun2-${deviceId}">
-                                        <label for="sun2-${deviceId}">Sun</label>
+                                <div class="form-group">
+                                    <label class="form-label">Active Days</label>
+                                    <div class="days-selector">
+                                        <div class="day-check">
+                                            <input type="checkbox" id="mon${i}-${deviceId}" checked>
+                                            <label for="mon${i}-${deviceId}">Mon</label>
+                                        </div>
+                                        <div class="day-check">
+                                            <input type="checkbox" id="tue${i}-${deviceId}" checked>
+                                            <label for="tue${i}-${deviceId}">Tue</label>
+                                        </div>
+                                        <div class="day-check">
+                                            <input type="checkbox" id="wed${i}-${deviceId}" checked>
+                                            <label for="wed${i}-${deviceId}">Wed</label>
+                                        </div>
+                                        <div class="day-check">
+                                            <input type="checkbox" id="thu${i}-${deviceId}" checked>
+                                            <label for="thu${i}-${deviceId}">Thu</label>
+                                        </div>
+                                        <div class="day-check">
+                                            <input type="checkbox" id="fri${i}-${deviceId}" checked>
+                                            <label for="fri${i}-${deviceId}">Fri</label>
+                                        </div>
+                                        <div class="day-check">
+                                            <input type="checkbox" id="sat${i}-${deviceId}">
+                                            <label for="sat${i}-${deviceId}">Sat</label>
+                                        </div>
+                                        <div class="day-check">
+                                            <input type="checkbox" id="sun${i}-${deviceId}">
+                                            <label for="sun${i}-${deviceId}">Sun</label>
+                                        </div>
                                     </div>
                                 </div>
+                                <div class="form-group">
+                                    <label class="form-label">Exclude Dates (YYYY-MM-DD):</label>
+                                    <input type="text" class="form-input" id="relay${i}-excludeDates-${deviceId}" 
+                                           placeholder="2024-12-25, 2024-01-01">
+                                    <small style="color: var(--gray); font-size: 0.7em;">Comma separated dates to exclude</small>
+                                </div>
+                                <button class="btn btn-primary" onclick="saveSchedule('${deviceId}', ${i})" style="width: 100%; margin-bottom: 20px;">
+                                    Save Schedule for Relay ${i}
+                                </button>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Exclude Dates (YYYY-MM-DD):</label>
-                                <input type="text" class="form-input" id="relay2-excludeDates-${deviceId}" 
-                                       placeholder="2024-12-25, 2024-01-01">
-                                <small style="color: var(--gray); font-size: 0.7em;">Comma separated dates to exclude</small>
-                            </div>
-                            <button class="btn btn-primary" onclick="saveSchedule('${deviceId}', 2)" style="width: 100%;">
-                                Save Schedule for Relay 2
-                            </button>
-                        </div>
-                    `;
+                        `;
+                    }
+                    
+                    settingsContent.innerHTML = settingsHTML;
 
                     // Populate with existing schedule data if available
                     if (schedules) {
-                        if (schedules.relay1) {
-                            document.getElementById(`relay1-enabled-${deviceId}`).value = schedules.relay1.enabled.toString();
-                            if (schedules.relay1.startTime) document.getElementById(`relay1-start-${deviceId}`).value = schedules.relay1.startTime;
-                            if (schedules.relay1.endTime) document.getElementById(`relay1-end-${deviceId}`).value = schedules.relay1.endTime;
-                            if (schedules.relay1.excludeDates) document.getElementById(`relay1-excludeDates-${deviceId}`).value = schedules.relay1.excludeDates;
-                            
-                            // Set days
-                            if (schedules.relay1.days) {
-                                const daysArray = schedules.relay1.days.split(',');
-                                const dayIds = ['mon1', 'tue1', 'wed1', 'thu1', 'fri1', 'sat1', 'sun1'];
-                                dayIds.forEach((dayId, index) => {
-                                    const dayNumber = (index + 1).toString();
-                                    document.getElementById(`${dayId}-${deviceId}`).checked = daysArray.includes(dayNumber);
-                                });
-                            }
-                        }
-                        
-                        if (schedules.relay2) {
-                            document.getElementById(`relay2-enabled-${deviceId}`).value = schedules.relay2.enabled.toString();
-                            if (schedules.relay2.startTime) document.getElementById(`relay2-start-${deviceId}`).value = schedules.relay2.startTime;
-                            if (schedules.relay2.endTime) document.getElementById(`relay2-end-${deviceId}`).value = schedules.relay2.endTime;
-                            if (schedules.relay2.excludeDates) document.getElementById(`relay2-excludeDates-${deviceId}`).value = schedules.relay2.excludeDates;
-                            
-                            // Set days
-                            if (schedules.relay2.days) {
-                                const daysArray = schedules.relay2.days.split(',');
-                                const dayIds = ['mon2', 'tue2', 'wed2', 'thu2', 'fri2', 'sat2', 'sun2'];
-                                dayIds.forEach((dayId, index) => {
-                                    const dayNumber = (index + 1).toString();
-                                    document.getElementById(`${dayId}-${deviceId}`).checked = daysArray.includes(dayNumber);
-                                });
+                        for (let i = 1; i <= relayCount; i++) {
+                            const relaySchedule = schedules[`relay${i}`];
+                            if (relaySchedule) {
+                                document.getElementById(`relay${i}-enabled-${deviceId}`).value = relaySchedule.enabled.toString();
+                                if (relaySchedule.startTime) document.getElementById(`relay${i}-start-${deviceId}`).value = relaySchedule.startTime;
+                                if (relaySchedule.endTime) document.getElementById(`relay${i}-end-${deviceId}`).value = relaySchedule.endTime;
+                                if (relaySchedule.excludeDates) document.getElementById(`relay${i}-excludeDates-${deviceId}`).value = relaySchedule.excludeDates;
+                                
+                                // Set days
+                                if (relaySchedule.days) {
+                                    const daysArray = relaySchedule.days.split(',');
+                                    const dayIds = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+                                    dayIds.forEach((dayId, index) => {
+                                        const dayNumber = (index + 1).toString();
+                                        document.getElementById(`${dayId}${i}-${deviceId}`).checked = daysArray.includes(dayNumber);
+                                    });
+                                }
                             }
                         }
                     }
@@ -1547,9 +1672,14 @@
             // Check if device exists in Firebase and set ownership
             database.ref(`devices/${deviceId}`).once('value')
                 .then(snapshot => {
+                    let relayCount = 2; // Default relay count
+                    
                     if (snapshot.exists()) {
-                        // Device exists, check if it's already owned
+                        // Device exists, detect relay count
                         const deviceData = snapshot.val();
+                        relayCount = detectRelayCount(deviceData);
+                        
+                        // Check if it's already owned
                         if (deviceData.owner && deviceData.owner !== userUid) {
                             showMessage('Device is already owned by another user', 'error');
                             return;
@@ -1558,61 +1688,24 @@
                         // Set ownership
                         database.ref(`devices/${deviceId}/owner`).set(userUid)
                             .then(() => {
-                                // Add device to user's device list
-                                database.ref(`users/${userUid}/devices/${deviceId}`).set({
-                                    name: deviceName,
-                                    addedAt: new Date().toISOString()
-                                })
-                                .then(() => {
-                                    // Add new device to local array
-                                    const newDevice = { id: deviceId, name: deviceName };
-                                    devices.push(newDevice);
-
-                                    // Create card for new device
-                                    createDeviceCard(newDevice);
-                                    setupDeviceListeners(deviceId);
-
-                                    // Reset form and close modal
-                                    document.getElementById('newDeviceId').value = '';
-                                    document.getElementById('newDeviceName').value = '';
-                                    toggleDeviceForm();
-
-                                    showMessage(`Device ${deviceName} added successfully`, 'success');
-                                });
+                                // Add device to user's device list with detected relay count
+                                addDeviceToUserList(deviceId, deviceName, relayCount);
                             })
                             .catch(error => {
                                 showMessage(`Error setting device ownership: ${error.message}`, 'error');
                             });
                     } else {
-                        // Device doesn't exist, create it
+                        // Device doesn't exist, create it with default relay count
                         database.ref(`devices/${deviceId}`).set({
                             owner: userUid,
                             name: deviceName,
                             created: new Date().toISOString(),
-                            online: false
+                            online: false,
+                            relayCount: relayCount // Store relay count in device data
                         })
                         .then(() => {
                             // Add device to user's device list
-                            database.ref(`users/${userUid}/devices/${deviceId}`).set({
-                                name: deviceName,
-                                addedAt: new Date().toISOString()
-                            })
-                            .then(() => {
-                                // Add new device to local array
-                                const newDevice = { id: deviceId, name: deviceName };
-                                devices.push(newDevice);
-
-                                // Create card for new device
-                                createDeviceCard(newDevice);
-                                setupDeviceListeners(deviceId);
-
-                                // Reset form and close modal
-                                document.getElementById('newDeviceId').value = '';
-                                document.getElementById('newDeviceName').value = '';
-                                toggleDeviceForm();
-
-                                showMessage(`Device ${deviceName} created and added successfully`, 'success');
-                            });
+                            addDeviceToUserList(deviceId, deviceName, relayCount);
                         })
                         .catch(error => {
                             showMessage(`Error creating device: ${error.message}`, 'error');
@@ -1622,6 +1715,37 @@
                 .catch(error => {
                     showMessage(`Error checking device: ${error.message}`, 'error');
                 });
+        }
+
+        function addDeviceToUserList(deviceId, deviceName, relayCount) {
+            database.ref(`users/${userUid}/devices/${deviceId}`).set({
+                name: deviceName,
+                relayCount: relayCount,
+                addedAt: new Date().toISOString()
+            })
+            .then(() => {
+                // Add new device to local array
+                const newDevice = { 
+                    id: deviceId, 
+                    name: deviceName, 
+                    relayCount: relayCount 
+                };
+                devices.push(newDevice);
+
+                // Create card for new device
+                createDeviceCard(newDevice);
+                setupDeviceListeners(deviceId);
+
+                // Reset form and close modal
+                document.getElementById('newDeviceId').value = '';
+                document.getElementById('newDeviceName').value = '';
+                toggleDeviceForm();
+
+                showMessage(`Device ${deviceName} added successfully with ${relayCount} relay${relayCount !== 1 ? 's' : ''}`, 'success');
+            })
+            .catch(error => {
+                showMessage(`Error adding device to user list: ${error.message}`, 'error');
+            });
         }
 
         function showMessage(message, type) {
