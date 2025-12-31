@@ -10,419 +10,390 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         /* ===== RESET & BASE STYLES ===== */
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    :root {
-        --primary: #4361ee;
-        --primary-light: #4895ef;
-        --secondary: #3f37c9;
-        --success: #4cc9f0;
-        --danger: #f72585;
-        --warning: #f8961e;
-        --info: #4895ef;
-        --light: #f8f9fa;
-        --dark: #212529;
-        --gray: #6c757d;
-        --gray-light: #e9ecef;
-        --border-radius: 12px;
-        --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        --transition: all 0.3s ease;
-    }
-
-    html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        overscroll-behavior-y: contain;
-        -webkit-overflow-scrolling: auto;
-    }
-
-    body {
-        background-color: #f5f7fb;
-        color: var(--dark);
-        min-height: 100vh;
-        padding: 0;
-    }
-
-    .app-container {
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
-
-    /* ===== HEADER ===== */
-    .header {
-        background: white;
-        box-shadow: var(--shadow);
-        padding: 15px 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        position: sticky;
-        top: 0;
-        z-index: 200;
-    }
-
-    .logo {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        color: var(--primary);
-        font-weight: 700;
-        font-size: 1.4rem;
-    }
-
-    .logo i {
-        font-size: 1.6rem;
-    }
-
-    .user-info {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .user-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: var(--primary);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-    }
-
-    .logout-btn {
-        background: none;
-        border: none;
-        color: var(--gray);
-        cursor: pointer;
-        font-size: 1.1rem;
-        transition: var(--transition);
-    }
-
-    .logout-btn:hover {
-        color: var(--danger);
-    }
-
-    /* ===== MAIN CONTENT ===== */
-    .main-content {
-        flex: 1 1 auto;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    /* ===== PAGE TITLE ===== */
-    .page-title {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-    }
-
-    .page-title h2 {
-        font-size: 1.5rem;
-        color: var(--dark);
-    }
-
-    /* ===== AUTH STYLES ===== */
-    .auth-container {
-        max-width: 400px;
-        margin: 40px auto;
-        background: white;
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow);
-        overflow: hidden;
-    }
-
-    .auth-header {
-        background: var(--primary);
-        color: white;
-        padding: 25px;
-        text-align: center;
-    }
-
-    .auth-header h2 {
-        font-size: 1.8rem;
-        margin-bottom: 5px;
-    }
-
-    .auth-form {
-        padding: 25px;
-    }
-
-    .auth-form-group {
-        margin-bottom: 20px;
-    }
-
-    .auth-form-group label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 600;
-        color: var(--dark);
-    }
-
-    .auth-form-group input {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid var(--gray-light);
-        border-radius: 8px;
-        font-size: 1rem;
-        transition: var(--transition);
-    }
-
-    .auth-form-group input:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
-    }
-
-    .auth-btn {
-        background: var(--primary);
-        color: white;
-        border: none;
-        padding: 12px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 1rem;
-        font-weight: 600;
-        width: 100%;
-        transition: var(--transition);
-    }
-
-    .auth-btn:hover {
-        background: var(--secondary);
-    }
-
-    .auth-message {
-        margin-top: 15px;
-        padding: 12px;
-        border-radius: 8px;
-        text-align: center;
-        font-weight: 600;
-    }
-
-    .auth-message.error {
-        background: rgba(247, 37, 133, 0.1);
-        color: var(--danger);
-    }
-
-    .auth-message.success {
-        background: rgba(76, 201, 240, 0.2);
-        color: var(--success);
-    }
-
-    /* ===== NOTIFICATIONS ===== */
-    .notification {
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 12px 20px;
-        border-radius: 8px;
-        color: white;
-        font-weight: 600;
-        z-index: 1000;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        animation: slideDown 0.3s ease;
-        min-width: 200px;
-        text-align: center;
-    }
-
-    .notification.success { background: var(--success); }
-    .notification.error { background: var(--danger); }
-    .notification.info { background: var(--info); }
-
-    @keyframes slideDown {
-        from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
-        to { transform: translateX(-50%) translateY(0); opacity: 1; }
-    }
-
-    @keyframes slideUp {
-        from { transform: translateX(-50%) translateY(0); opacity: 1; }
-        to { transform: translateX(-50%) translateY(-100%); opacity: 0; }
-    }
-
-    /* ===== RESPONSIVE DESIGN ===== */
-    @media (max-width: 768px) {
-        .main-content {
-            padding: 15px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-    }
 
-    @media (max-width: 480px) {
+        :root {
+            --primary: #4361ee;
+            --primary-light: #4895ef;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --warning: #f8961e;
+            --info: #4895ef;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --gray-light: #e9ecef;
+            --border-radius: 12px;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            overscroll-behavior-y: contain;
+            -webkit-overflow-scrolling: auto;
+        }
+
+        body {
+            background-color: #f5f7fb;
+            color: var(--dark);
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ===== HEADER ===== */
         .header {
-            padding: 12px 15px;
+            background: white;
+            box-shadow: var(--shadow);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 200;
         }
 
         .logo {
-            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 1.4rem;
+        }
+
+        .logo i {
+            font-size: 1.6rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
 
         .user-avatar {
-            width: 32px;
-            height: 32px;
-            font-size: 0.9rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
         }
 
+        .logout-btn {
+            background: none;
+            border: none;
+            color: var(--gray);
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover {
+            color: var(--danger);
+        }
+
+        /* ===== MAIN CONTENT ===== */
         .main-content {
-            padding: 10px;
+            flex: 1 1 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
-        .page-title h2 {
-            font-size: 1.3rem;
+        /* ===== AUTH STYLES ===== */
+        .auth-container {
+            max-width: 400px;
+            margin: 40px auto;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
         }
-    }
 
-    /* ===== UTILITY CLASSES ===== */
-    .hidden {
-        display: none !important;
-    }
+        .auth-header {
+            background: var(--primary);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
 
-    .text-center {
-        text-align: center;
-    }
+        .auth-header h2 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
 
-    .mb-10 {
-        margin-bottom: 10px;
-    }
+        .auth-form {
+            padding: 25px;
+        }
 
-    .mb-15 {
-        margin-bottom: 15px;
-    }
+        .auth-form-group {
+            margin-bottom: 20px;
+        }
 
-    .mb-20 {
-        margin-bottom: 20px;
-    }
+        .auth-form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
 
-    /* ===== DEVICE TYPE CARDS ===== */
-    .device-types {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
-        margin-bottom: 18px;
-    }
+        .auth-form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--gray-light);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
 
-    .type-card {
-        background: white;
-        border-radius: 12px;
-        padding: 14px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-        box-shadow: var(--shadow);
-        cursor: pointer;
-        transition: transform 0.18s ease, box-shadow 0.18s ease;
-        text-align: center;
-        color: var(--dark);
-    }
+        .auth-form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
 
-    .type-card.locked {
-        cursor: default;
-        filter: grayscale(20%);
-    }
+        .auth-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            width: 100%;
+            transition: var(--transition);
+        }
 
-    .type-card:hover {
-        transform: translateY(-6px);
-    }
+        .auth-btn:hover {
+            background: var(--secondary);
+        }
 
-    .type-card .type-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 10px;
-        background: linear-gradient(135deg,var(--primary),var(--primary-light));
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-size: 1.2rem;
-        box-shadow: 0 6px 18px rgba(67,97,238,0.18);
-    }
+        .auth-message {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+        }
 
-    .type-card .type-title {
-        font-weight: 700;
-        font-size: 0.97rem;
-    }
+        .auth-message.error {
+            background: rgba(247, 37, 133, 0.1);
+            color: var(--danger);
+        }
 
-    .type-card .type-sub {
-        font-size: 0.82rem;
-        color: var(--gray);
-    }
+        .auth-message.success {
+            background: rgba(76, 201, 240, 0.2);
+            color: var(--success);
+        }
 
-    .type-card .lock-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 8px;
-        background: rgba(0,0,0,0.06);
-        border-radius: 999px;
-        color: var(--gray);
-        font-size: 0.86rem;
-        margin-top: 6px;
-    }
+        /* ===== NOTIFICATIONS ===== */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideDown 0.3s ease;
+            min-width: 200px;
+            text-align: center;
+        }
 
-    @media (max-width: 920px) {
-        .device-types { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 480px) {
-        .device-types { grid-template-columns: repeat(1, 1fr); }
-    }
+        .notification.success { background: var(--success); }
+        .notification.error { background: var(--danger); }
+        .notification.info { background: var(--info); }
 
-    /* ===== FOOTER NAV ===== */
-    .app-footer {
-        width: 100%;
-        background: white;
-        box-shadow: 0 -6px 18px rgba(0,0,0,0.03);
-        position: sticky;
-        bottom: 0;
-        z-index: 200;
-    }
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
 
-    .footer-nav {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        padding: 8px 6px;
-        max-width: 980px;
-        margin: 0 auto;
-    }
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(0); opacity: 1; }
+            to { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+        }
 
-    .footer-link {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-        padding: 6px 8px;
-        color: var(--gray);
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 0.85rem;
-        border-radius: 8px;
-    }
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 15px;
+            }
+        }
 
-    .footer-link.active,
-    .footer-link:hover {
-        color: var(--primary);
-        background: rgba(67,97,238,0.06);
-    }
+        @media (max-width: 480px) {
+            .header {
+                padding: 12px 15px;
+            }
 
-    /* Hide footer when login/signup (auth) section is visible */
-    #authSection:not(.hidden) ~ footer.app-footer {
-        display: none;
-    }
+            .logo {
+                font-size: 1.2rem;
+            }
+
+            .user-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 0.9rem;
+            }
+
+            .main-content {
+                padding: 10px;
+            }
+        }
+
+        /* ===== UTILITY CLASSES ===== */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* ===== DEVICE TYPE CARDS ===== */
+        .device-types {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .type-card {
+            background: white;
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+            text-align: center;
+            color: var(--dark);
+        }
+
+        .type-card.locked {
+            cursor: default;
+            filter: grayscale(20%);
+        }
+
+        .type-card:hover {
+            transform: translateY(-6px);
+        }
+
+        .type-card .type-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: linear-gradient(135deg,var(--primary),var(--primary-light));
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.2rem;
+            box-shadow: 0 6px 18px rgba(67,97,238,0.18);
+        }
+
+        .type-card .type-title {
+            font-weight: 700;
+            font-size: 0.97rem;
+        }
+
+        .type-card .type-sub {
+            font-size: 0.82rem;
+            color: var(--gray);
+        }
+
+        .type-card .lock-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 8px;
+            background: rgba(0,0,0,0.06);
+            border-radius: 999px;
+            color: var(--gray);
+            font-size: 0.86rem;
+            margin-top: 6px;
+        }
+
+        @media (max-width: 920px) {
+            .device-types { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 480px) {
+            .device-types { grid-template-columns: repeat(1, 1fr); }
+        }
+
+        /* ===== FOOTER NAV ===== */
+        .app-footer {
+            width: 100%;
+            background: white;
+            box-shadow: 0 -6px 18px rgba(0,0,0,0.03);
+            position: sticky;
+            bottom: 0;
+            z-index: 200;
+        }
+
+        .footer-nav {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 6px;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+
+        .footer-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 8px;
+            color: var(--gray);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border-radius: 8px;
+        }
+
+        .footer-link.active,
+        .footer-link:hover {
+            color: var(--primary);
+            background: rgba(67,97,238,0.06);
+        }
+
+        /* Hide footer when login/signup (auth) section is visible */
+        #authSection:not(.hidden) ~ footer.app-footer {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -465,13 +436,12 @@
 
         <!-- Main Content -->
         <div class="main-content">
-
-            <!-- Device type selection header (new) -->
-            <div class="main-title text-center" style="margin-bottom:12px;">
+            <!-- Device type selection header -->
+            <div class="text-center" style="margin-bottom:12px;">
                 <h2 style="font-size:1.4rem; color:var(--dark);">Centralize Dashboard</h2>
             </div>
 
-            <!-- Device type selection (kept) -->
+            <!-- Device type selection -->
             <div class="device-types" aria-label="Device type selection">
                  <div class="type-card" role="button" tabindex="0" onclick="handleDeviceTypeClick('floor')"
                       onkeydown="if(event.key==='Enter') handleDeviceTypeClick('floor')">
@@ -517,46 +487,26 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
-        const database = firebase.database();
-
-        // Global variables
-        let devices = [];
-        let userUid = null;
-        let currentEditingDevice = null;
-        let currentSettingsDevice = null;
 
         // Check authentication state on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Configure auth persistence
             auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-                .then(() => {
-                    console.log("Auth persistence set to LOCAL");
-                })
                 .catch((error) => {
                     console.error("Error setting auth persistence:", error);
                 });
 
             // Set up auth state listener
             auth.onAuthStateChanged(function(user) {
-                console.log('Auth state changed, user:', user);
-
-                try {
-                    if (user) {
-                        // User is signed in
-                        userUid = user.uid;
-                        const userAvatarElement = document.getElementById('userAvatar');
-                        if (userAvatarElement) {
-                            userAvatarElement.textContent = user.email.charAt(0).toUpperCase();
-                        }
-                        showDashboard();
-                        loadUserDevices();
-                    } else {
-                        // User is signed out
-                        showAuth();
+                if (user) {
+                    // User is signed in
+                    const userAvatarElement = document.getElementById('userAvatar');
+                    if (userAvatarElement) {
+                        userAvatarElement.textContent = user.email.charAt(0).toUpperCase();
                     }
-                } catch (error) {
-                    console.error('Error in auth state change:', error);
-                    showMessage('Authentication error occurred', 'error');
+                    showDashboard();
+                } else {
+                    // User is signed out
+                    showAuth();
                 }
             });
         });
@@ -608,35 +558,9 @@
         function showDashboard() {
             document.getElementById('authSection').classList.add('hidden');
             document.getElementById('dashboardSection').classList.remove('hidden');
-
-            // set footer active to home when showing dashboard
             setFooterActive('home');
         }
 
-        // Load user devices from Firebase
-        function loadUserDevices() {
-            if (!userUid) return;
-
-            database.ref(`users/${userUid}/devices`).once('value')
-                .then((snapshot) => {
-                    const userDevices = snapshot.val();
-                    devices = [];
-
-                    if (userDevices) {
-                        Object.keys(userDevices).forEach(deviceId => {
-                            devices.push({
-                                id: deviceId,
-                                name: userDevices[deviceId].name
-                            });
-                        });
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error loading user devices:', error);
-                });
-        }
-
-        // Modal functions
         function showMessage(message, type) {
             // Remove existing notifications
             document.querySelectorAll('.notification').forEach(notif => {
@@ -664,19 +588,14 @@
             }, 3000);
         }
 
-        // New helper: handle device type clicks
         function handleDeviceTypeClick(type) {
             if (type === 'floor') {
-                // redirect to index.html (page for floor devices)
                 window.location.href = 'test2.html';
                 return;
             }
-
-            // locked/coming soon behaviour
             showMessage('This device type is locked or coming soon', 'info');
         }
 
-        // Footer helper to mark active link
         function setFooterActive(name) {
             ['home','settings','profile'].forEach(n => {
                 const el = document.getElementById(`footer-${n}`);
@@ -685,19 +604,13 @@
             });
         }
 
-        // Ensure footer active matches current location on load
+        // Set footer active on load
         document.addEventListener('DOMContentLoaded', () => {
-            // preserve existing DOMContentLoaded handlers above (they already run)
-            try {
-                const path = window.location.pathname.split('/').pop().toLowerCase();
-                if (path === '' || path === 'index.html' || path === 'index.html') setFooterActive('home');
-                else if (path.includes('setting')) setFooterActive('settings');
-                else if (path.includes('profile')) setFooterActive('profile');
-            } catch (e) {}
+            setFooterActive('home');
         });
     </script>
 
-    <!-- Footer (new) -->
+    <!-- Footer -->
     <footer class="app-footer" role="contentinfo" aria-label="Footer navigation">
         <nav class="footer-nav" role="navigation" aria-label="Main footer">
             <a href="#index" id="footer-home" class="footer-link" onclick="setFooterActive('home')">
