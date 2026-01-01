@@ -1,0 +1,1728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Devices - Growave</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        /* ===== RESET & BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #4361ee;
+            --primary-light: #4895ef;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --warning: #f8961e;
+            --info: #4895ef;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+            --gray-light: #e9ecef;
+            --border-radius: 12px;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+
+            /* Footer height */
+            --footer-height: 64px;
+            --footer-gap: 60px;
+        }
+
+        body {
+            background-color: #f5f7fb;
+            color: var(--dark);
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        /* Prevent overscroll */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: auto;
+        }
+
+        /* app container / main area */
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* main content MUST be the only scrollable area */
+        .main-content {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            /* Reserve space for footer */
+            padding-bottom: calc(var(--footer-height) + var(--footer-gap) + env(safe-area-inset-bottom));
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: white;
+            box-shadow: var(--shadow);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+
+        .logo i {
+            font-size: 1.5rem;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Alert Bell in Header */
+        .alert-bell {
+            position: relative;
+            background: none;
+            border: none;
+            color: var(--gray);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .alert-bell:hover {
+            color: var(--primary);
+            background: rgba(67, 97, 238, 0.1);
+        }
+
+        .alert-bell.has-alerts {
+            color: var(--danger);
+        }
+
+        .alert-bell.has-alerts:hover {
+            background: rgba(247, 37, 133, 0.1);
+        }
+
+        .alert-count {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--danger);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: bold;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translate(30%, -30%);
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: translate(30%, -30%) scale(1); }
+            50% { transform: translate(30%, -30%) scale(1.2); }
+            100% { transform: translate(30%, -30%) scale(1); }
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .back-btn:hover {
+            background: rgba(67, 97, 238, 0.1);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: var(--gray);
+            cursor: pointer;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover {
+            color: var(--danger);
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            flex: 1;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* ===== PAGE TITLE ===== */
+        .page-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .page-title h2 {
+            font-size: 1.3rem;
+            color: var(--dark);
+        }
+
+        .add-room-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            font-size: 1rem;
+        }
+
+        .add-room-btn:hover {
+            background: var(--secondary);
+            transform: translateY(-2px);
+        }
+
+        /* ===== ROOMS GRID ===== */
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        /* ===== ROOM CARD ===== */
+        .room-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: var(--transition);
+            position: relative;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .room-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .room-card.has-alert {
+            border-left: 3px solid var(--danger);
+        }
+
+        .room-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--gray-light);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .room-icon {
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .room-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--dark);
+            border: none;
+            background: transparent;
+            outline: none;
+            flex: 1;
+            padding: 4px 6px;
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+
+        .room-name:focus {
+            background: white;
+            box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+        }
+
+        .room-save-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            opacity: 0;
+            visibility: hidden;
+            font-size: 0.9rem;
+        }
+
+        .room-save-btn.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .room-save-btn:hover {
+            background: #3aafd9;
+            transform: scale(1.1);
+        }
+
+        /* ===== ROOM CONTENT ===== */
+        .room-content {
+            padding: 15px;
+        }
+
+        /* Occupancy Status - Compact and simple */
+        .occupancy-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            background: var(--light);
+        }
+
+        .status-icon-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: white;
+        }
+
+        .status-icon.occupied {
+            background: var(--danger);
+            animation: blink 2s infinite;
+        }
+
+        .status-icon.unoccupied {
+            background: var(--success);
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .status-text {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-label {
+            font-size: 0.8rem;
+            color: var(--gray);
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .occupied-label {
+            color: var(--danger);
+        }
+
+        .unoccupied-label {
+            color: var(--success);
+        }
+
+        .last-update-indicator {
+            font-size: 0.75rem;
+            color: var(--gray);
+            text-align: right;
+            line-height: 1.2;
+        }
+
+        /* Room Info Grid - Compact */
+        .room-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .room-info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 10px;
+            background: #fff;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            border: 1px solid var(--gray-light);
+        }
+
+        .room-info-label {
+            font-size: 0.8rem;
+            color: var(--gray);
+            font-weight: 500;
+        }
+
+        .room-info-value {
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.95rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Signal strength styling */
+        .rssi-excellent { color: var(--success); }
+        .rssi-good { color: #8ac926; }
+        .rssi-fair { color: #ffca3a; }
+        .rssi-poor { color: var(--warning); }
+        .rssi-weak { color: var(--danger); }
+
+        /* Last Update styling */
+        .last-update {
+            font-size: 0.75rem;
+            color: var(--gray);
+            padding: 6px 8px;
+            background: var(--light);
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        /* Alert indicator in card */
+        .room-alert-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+            animation: alert-pulse 1.5s infinite;
+            display: none;
+        }
+
+        .room-card.has-alert .room-alert-indicator {
+            display: block;
+        }
+
+        @keyframes alert-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* ===== ALERTS PANEL ===== */
+        .alerts-panel {
+            display: none;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-top: 15px;
+            overflow: hidden;
+            border: 1px solid var(--gray-light);
+        }
+
+        .alerts-panel.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        .alerts-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--gray-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #f72585, #f8961e);
+            color: white;
+        }
+
+        .alerts-header h3 {
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .close-alerts-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+
+        .alerts-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .alert-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--gray-light);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: var(--transition);
+        }
+
+        .alert-item:last-child {
+            border-bottom: none;
+        }
+
+        .alert-item:hover {
+            background: rgba(247, 37, 133, 0.05);
+        }
+
+        .alert-icon {
+            color: var(--danger);
+            font-size: 1.1rem;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 3px;
+            font-size: 0.95rem;
+        }
+
+        .alert-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+
+        .clear-all-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background: var(--gray-light);
+            border: none;
+            color: var(--dark);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+
+        .clear-all-btn:hover {
+            background: #d8dde2;
+        }
+
+        /* ===== MODALS ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: var(--border-radius);
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--gray-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            opacity: 0.8;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+            color: var(--dark);
+            font-size: 0.95rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--gray-light);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            flex: 1;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary);
+        }
+
+        .btn-secondary {
+            background: var(--gray-light);
+            color: var(--dark);
+        }
+
+        .btn-secondary:hover {
+            background: #d8dde2;
+        }
+
+        /* ===== AUTH STYLES ===== */
+        .auth-container {
+            max-width: 380px;
+            margin: 40px auto;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .auth-header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .auth-header h2 {
+            font-size: 1.6rem;
+            margin-bottom: 5px;
+        }
+
+        .auth-form {
+            padding: 20px;
+        }
+
+        .auth-form-group {
+            margin-bottom: 15px;
+        }
+
+        .auth-form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.95rem;
+        }
+
+        .auth-form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--gray-light);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .auth-form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .auth-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            width: 100%;
+            transition: var(--transition);
+        }
+
+        .auth-btn:hover {
+            background: var(--secondary);
+        }
+
+        .auth-message {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .auth-message.error {
+            background: rgba(247, 37, 133, 0.1);
+            color: var(--danger);
+        }
+
+        .auth-message.success {
+            background: rgba(76, 201, 240, 0.2);
+            color: var(--success);
+        }
+
+        /* ===== NOTIFICATIONS ===== */
+        .notification {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 16px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideDown 0.3s ease;
+            min-width: 180px;
+            text-align: center;
+            font-size: 0.9rem;
+            max-width: 90%;
+        }
+
+        .notification.success { background: var(--success); }
+        .notification.error { background: var(--danger); }
+        .notification.info { background: var(--info); }
+
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(0); opacity: 1; }
+            to { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 768px) {
+            .rooms-grid {
+                grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+                gap: 12px;
+            }
+
+            .main-content {
+                padding: 12px;
+                gap: 12px;
+            }
+
+            .room-header {
+                padding: 10px 12px;
+            }
+
+            .room-content {
+                padding: 12px;
+            }
+
+            .header {
+                padding: 12px 15px;
+            }
+
+            .logo {
+                font-size: 1.2rem;
+            }
+
+            .page-title h2 {
+                font-size: 1.2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 10px 12px;
+            }
+
+            .logo {
+                font-size: 1.1rem;
+            }
+
+            .user-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 0.8rem;
+            }
+
+            .main-content {
+                padding: 10px;
+            }
+
+            .page-title h2 {
+                font-size: 1.1rem;
+            }
+
+            .rooms-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .room-info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .add-room-btn {
+                width: 34px;
+                height: 34px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* ===== UTILITY CLASSES ===== */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* ===== FOOTER NAV ===== */
+        .app-footer {
+            height: var(--footer-height);
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 999;
+            box-shadow: 0 -6px 18px rgba(0,0,0,0.03);
+        }
+
+        .footer-nav {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px;
+            max-width: 980px;
+            margin: 0 auto;
+            gap: 6px;
+        }
+
+        .footer-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            color: var(--gray);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.8rem;
+            padding: 6px 8px;
+            border-radius: 8px;
+        }
+
+        .footer-link.active,
+        .footer-link:hover {
+            color: var(--primary);
+            background: rgba(67,97,238,0.06);
+        }
+
+        #authSection:not(.hidden) ~ footer.app-footer {
+            display: none;
+        }
+
+        /* ensure modals and notifications remain above footer */
+        .modal { z-index: 1100; }
+        .notification { z-index: 1200; }
+
+        /* spacer to ensure last item is visible */
+        .bottom-spacer {
+            height: calc(var(--footer-height) + var(--footer-gap) + env(safe-area-inset-bottom));
+            width: 100%;
+            pointer-events: none;
+            background: transparent;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login/Signup Section -->
+    <div id="authSection" class="auth-container">
+        <div class="auth-header">
+            <h2><i class="fas fa-network-wired"></i> Room Devices Monitor</h2>
+            <p>Classroom Monitoring System</p>
+        </div>
+
+        <div class="auth-form">
+            <div class="auth-form-group">
+                <label for="loginEmail">Email</label>
+                <input type="email" id="loginEmail" placeholder="Enter your email">
+            </div>
+            <div class="auth-form-group">
+                <label for="loginPassword">Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter your password">
+            </div>
+            <button class="auth-btn" onclick="login()">Login</button>
+            <div id="loginMessage" class="auth-message"></div>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="app-container hidden">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-door-closed"></i>
+                <span>Room Monitor</span>
+            </div>
+
+            <div class="header-controls">
+                <!-- Alert Bell -->
+                <button class="alert-bell" id="globalAlertBell" onclick="toggleAlertsPanel()">
+                    <i class="fas fa-bell"></i>
+                    <span class="alert-count" id="globalAlertCount">0</span>
+                </button>
+
+                <!-- Back button -->
+                <button class="back-btn" title="Back to Home" onclick="goHome()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <button class="logout-btn" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Page Title -->
+            <div class="page-title">
+                <h2>Classroom Monitoring</h2>
+                <button class="add-room-btn" title="Add classroom" onclick="toggleAddRoomModal()">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+
+            <!-- Rooms Grid -->
+            <div class="rooms-grid" id="roomsGrid">
+                <!-- Rooms will be dynamically added here -->
+            </div>
+
+            <!-- Alerts Panel -->
+            <div class="alerts-panel" id="alertsPanel">
+                <div class="alerts-header">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Active Alerts</h3>
+                    <button class="close-alerts-btn" onclick="toggleAlertsPanel()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="alerts-list" id="alertsList">
+                    <!-- Alerts will be dynamically added here -->
+                </div>
+                <button class="clear-all-btn" onclick="clearAllAlerts()">Clear All Alerts</button>
+            </div>
+
+            <!-- Spacer for footer -->
+            <div class="bottom-spacer" aria-hidden="true"></div>
+        </div>
+    </div>
+
+    <!-- Add Room Modal -->
+    <div id="addRoomModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add New Classroom</h3>
+                <button class="modal-close" onclick="toggleAddRoomModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Classroom ID</label>
+                    <input type="text" id="newRoomId" class="form-input" placeholder="classroom_101">
+                    <small style="color: var(--gray); font-size: 0.8rem;">Enter the exact Classroom ID from the system</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Display Name</label>
+                    <input type="text" id="newRoomName" class="form-input" placeholder="Classroom 101">
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="toggleAddRoomModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="addNewRoom()">Add Classroom</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyB0pxbiRe5flvA7BPqiJgyP8n8aWmkoLI4",
+            authDomain: "growave-esp32-central.firebaseapp.com",
+            databaseURL: "https://growave-esp32-central-default-rtdb.firebaseio.com",
+            projectId: "growave-esp32-central",
+            storageBucket: "growave-esp32-central.firebasestorage.app",
+            messagingSenderId: "518571286609",
+            appId: "1:518571286609:web:afdd9ef5f364873006d870",
+            measurementId: "G-XK1G35BGL0"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // Global variables
+        let rooms = [];
+        let userUid = null;
+        let activeAlerts = [];
+        let editingRoomId = null;
+
+        // Check authentication state on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configure auth persistence
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+                .then(() => {
+                    console.log("Auth persistence set to LOCAL");
+                })
+                .catch((error) => {
+                    console.error("Error setting auth persistence:", error);
+                });
+
+            // Set up auth state listener
+            auth.onAuthStateChanged(function(user) {
+                console.log('Auth state changed, user:', user);
+
+                try {
+                    if (user) {
+                        // User is signed in
+                        userUid = user.uid;
+                        const userAvatarElement = document.getElementById('userAvatar');
+                        if (userAvatarElement) {
+                            userAvatarElement.textContent = user.email.charAt(0).toUpperCase();
+                        }
+                        showDashboard();
+                        loadUserRooms();
+                    } else {
+                        // User is signed out
+                        showAuth();
+                    }
+                } catch (error) {
+                    console.error('Error in auth state change:', error);
+                    showMessage('Authentication error occurred', 'error');
+                }
+            });
+        });
+
+        // Authentication functions
+        function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const messageElement = document.getElementById('loginMessage');
+
+            if (!email || !password) {
+                if (messageElement) {
+                    messageElement.textContent = 'Please enter email and password';
+                    messageElement.className = 'auth-message error';
+                }
+                return;
+            }
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    if (messageElement) {
+                        messageElement.textContent = 'Login successful!';
+                        messageElement.className = 'auth-message success';
+                    }
+                })
+                .catch((error) => {
+                    if (messageElement) {
+                        messageElement.textContent = error.message;
+                        messageElement.className = 'auth-message error';
+                    }
+                });
+        }
+
+        function logout() {
+            auth.signOut()
+                .then(() => {
+                    showAuth();
+                    showMessage('Logged out successfully', 'success');
+                })
+                .catch((error) => {
+                    console.error('Logout error:', error);
+                });
+        }
+
+        function showAuth() {
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('dashboardSection').classList.add('hidden');
+        }
+
+        function showDashboard() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+        }
+
+        // Load user rooms from Firebase
+        function loadUserRooms() {
+            if (!userUid) return;
+
+            database.ref(`users/${userUid}/classrooms`).once('value')
+                .then((snapshot) => {
+                    const userRooms = snapshot.val();
+                    rooms = [];
+
+                    if (userRooms) {
+                        Object.keys(userRooms).forEach(roomId => {
+                            rooms.push({
+                                id: roomId,
+                                name: userRooms[roomId].name || roomId,
+                                customName: userRooms[roomId].name || null
+                            });
+                        });
+                    }
+
+                    initializeDashboard();
+                })
+                .catch((error) => {
+                    console.error('Error loading user rooms:', error);
+                });
+        }
+
+        // Dashboard functions
+        function initializeDashboard() {
+            const roomsGrid = document.getElementById('roomsGrid');
+            
+            // Clear the grid
+            roomsGrid.innerHTML = '';
+
+            if (rooms.length === 0) {
+                roomsGrid.innerHTML = `
+                    <div class="text-center" style="grid-column: 1 / -1; padding: 30px 15px;">
+                        <i class="fas fa-door-open" style="font-size: 2.5rem; color: var(--gray-light); margin-bottom: 12px;"></i>
+                        <h3 style="color: var(--gray); margin-bottom: 8px; font-size: 1.2rem;">No Classrooms Added</h3>
+                        <p style="color: var(--gray); font-size: 0.9rem;">Add your first classroom to start monitoring</p>
+                    </div>
+                `;
+                return;
+            }
+
+            rooms.forEach(room => {
+                createRoomCard(room);
+                setupRoomListener(room.id);
+            });
+
+            updateGlobalAlertBell();
+        }
+
+        function createRoomCard(room) {
+            const roomsGrid = document.getElementById('roomsGrid');
+
+            // If we're showing "No Classrooms Added" message, remove it first
+            if (roomsGrid.innerHTML.includes('No Classrooms Added')) {
+                roomsGrid.innerHTML = '';
+            }
+
+            const roomCard = document.createElement('div');
+            roomCard.className = 'room-card';
+            roomCard.id = `room-${room.id}`;
+            
+            roomCard.innerHTML = `
+                <div class="room-alert-indicator"></div>
+                <div class="room-header">
+                    <i class="fas fa-door-closed room-icon"></i>
+                    <input type="text" 
+                           class="room-name" 
+                           value="${room.customName || room.id}" 
+                           data-original-name="${room.customName || room.id}"
+                           onfocus="startEditingRoomName('${room.id}')"
+                           onblur="saveRoomName('${room.id}')"
+                           onkeypress="handleRoomNameKeyPress(event, '${room.id}')">
+                    <button class="room-save-btn" id="save-btn-${room.id}" onclick="saveRoomName('${room.id}')">
+                        <i class="fas fa-check"></i>
+                    </button>
+                </div>
+                <div class="room-content">
+                    <div class="occupancy-status">
+                        <div class="status-icon-container">
+                            <div class="status-icon" id="status-icon-${room.id}">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="status-text">
+                                <div class="status-label">Status</div>
+                                <div class="status-label" id="status-text-${room.id}">Loading...</div>
+                            </div>
+                        </div>
+                        <div class="last-update-indicator" id="last-update-indicator-${room.id}">--</div>
+                    </div>
+                    <div class="room-info-grid">
+                        <div class="room-info-item">
+                            <div class="room-info-label">IP Address</div>
+                            <div class="room-info-value" id="ip-${room.id}">--</div>
+                        </div>
+                        <div class="room-info-item">
+                            <div class="room-info-label">Signal Strength</div>
+                            <div class="room-info-value" id="rssi-${room.id}">--</div>
+                        </div>
+                    </div>
+                    <div class="last-update" id="last-update-${room.id}">Last update: --</div>
+                </div>
+            `;
+
+            roomsGrid.appendChild(roomCard);
+        }
+
+        function setupRoomListener(roomId) {
+            const roomPath = `classrooms/${roomId}`;
+
+            // Real-time updates for room data
+            database.ref(roomPath).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    updateRoomStatus(roomId, data);
+                    checkForAlerts(roomId, data);
+                } else {
+                    // Room doesn't exist in classrooms
+                    updateRoomStatus(roomId, {
+                        online: false,
+                        status: 'Unknown'
+                    });
+                }
+            });
+        }
+
+        function updateRoomStatus(roomId, data) {
+            // Update occupancy status with icon
+            const statusIcon = document.getElementById(`status-icon-${roomId}`);
+            const statusText = document.getElementById(`status-text-${roomId}`);
+            
+            if (data.status === 'Occupied') {
+                statusIcon.className = 'status-icon occupied';
+                statusIcon.innerHTML = '<i class="fas fa-user-check"></i>';
+                statusText.className = 'status-label occupied-label';
+                statusText.textContent = 'Occupied';
+            } else {
+                statusIcon.className = 'status-icon unoccupied';
+                statusIcon.innerHTML = '<i class="fas fa-user-times"></i>';
+                statusText.className = 'status-label unoccupied-label';
+                statusText.textContent = 'Unoccupied';
+            }
+
+            // Update IP address
+            if (data.ip) {
+                document.getElementById(`ip-${roomId}`).textContent = data.ip;
+            }
+
+            // Update RSSI with color coding
+            if (data.rssi) {
+                const rssiElement = document.getElementById(`rssi-${roomId}`);
+                const rssi = parseInt(data.rssi);
+                rssiElement.textContent = `${rssi} dBm`;
+                
+                // Color code based on signal strength
+                if (rssi >= -50) {
+                    rssiElement.className = 'room-info-value rssi-excellent';
+                } else if (rssi >= -60) {
+                    rssiElement.className = 'room-info-value rssi-good';
+                } else if (rssi >= -70) {
+                    rssiElement.className = 'room-info-value rssi-fair';
+                } else if (rssi >= -80) {
+                    rssiElement.className = 'room-info-value rssi-poor';
+                } else {
+                    rssiElement.className = 'room-info-value rssi-weak';
+                }
+            }
+
+            // Update last update time
+            const lastUpdateElement = document.getElementById(`last-update-${roomId}`);
+            const lastUpdateIndicator = document.getElementById(`last-update-indicator-${roomId}`);
+            
+            if (data.lastUpdate) {
+                const lastUpdate = new Date(data.lastUpdate);
+                const now = new Date();
+                const diffMs = now - lastUpdate;
+                const diffMins = Math.floor(diffMs / 60000);
+                
+                if (diffMins < 1) {
+                    lastUpdateElement.textContent = 'Last update: Just now';
+                    lastUpdateIndicator.textContent = 'Just now';
+                    lastUpdateIndicator.style.color = 'var(--success)';
+                } else if (diffMins < 60) {
+                    lastUpdateElement.textContent = `Last update: ${diffMins} min ago`;
+                    lastUpdateIndicator.textContent = `${diffMins}m ago`;
+                    lastUpdateIndicator.style.color = diffMins < 5 ? 'var(--success)' : 
+                                                     diffMins < 15 ? '#ffca3a' : 'var(--danger)';
+                } else {
+                    const diffHours = Math.floor(diffMins / 60);
+                    lastUpdateElement.textContent = `Last update: ${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+                    lastUpdateIndicator.textContent = `${diffHours}h ago`;
+                    lastUpdateIndicator.style.color = 'var(--danger)';
+                }
+            }
+        }
+
+        function checkForAlerts(roomId, data) {
+            const room = rooms.find(r => r.id === roomId);
+            if (!room) return;
+
+            const roomAlertIndex = activeAlerts.findIndex(alert => alert.roomId === roomId);
+            
+            // Check if there's an alert
+            if (data.alert && data.alert.trim() !== '') {
+                // New or updated alert
+                const alertData = {
+                    roomId: roomId,
+                    roomName: room.customName || room.id,
+                    message: data.alert,
+                    timestamp: data.lastUpdate || Date.now(),
+                    type: 'room_alert'
+                };
+
+                if (roomAlertIndex === -1) {
+                    // New alert
+                    activeAlerts.push(alertData);
+                } else {
+                    // Update existing alert
+                    activeAlerts[roomAlertIndex] = alertData;
+                }
+                
+                // Add alert style to card
+                document.getElementById(`room-${roomId}`).classList.add('has-alert');
+            } else {
+                // No alert, remove if exists
+                if (roomAlertIndex !== -1) {
+                    activeAlerts.splice(roomAlertIndex, 1);
+                }
+                // Remove alert style from card
+                document.getElementById(`room-${roomId}`).classList.remove('has-alert');
+            }
+
+            updateGlobalAlertBell();
+            updateAlertsList();
+        }
+
+        function updateGlobalAlertBell() {
+            const totalAlerts = activeAlerts.length;
+            const alertBell = document.getElementById('globalAlertBell');
+            const alertCount = document.getElementById('globalAlertCount');
+            
+            alertCount.textContent = totalAlerts;
+            
+            if (totalAlerts > 0) {
+                alertBell.classList.add('has-alerts');
+                alertCount.classList.add('pulse');
+            } else {
+                alertBell.classList.remove('has-alerts');
+                alertCount.classList.remove('pulse');
+            }
+        }
+
+        function updateAlertsList() {
+            const alertsList = document.getElementById('alertsList');
+            alertsList.innerHTML = '';
+
+            if (activeAlerts.length === 0) {
+                alertsList.innerHTML = `
+                    <div style="padding: 25px 15px; text-align: center; color: var(--gray);">
+                        <i class="fas fa-check-circle" style="font-size: 1.8rem; margin-bottom: 8px;"></i>
+                        <p style="font-size: 0.9rem;">No active alerts</p>
+                    </div>
+                `;
+                return;
+            }
+
+            activeAlerts.forEach((alert, index) => {
+                const alertTime = new Date(alert.timestamp);
+                const timeStr = alertTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                const alertItem = document.createElement('div');
+                alertItem.className = 'alert-item';
+                alertItem.innerHTML = `
+                    <div class="alert-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-title">${alert.roomName}: ${alert.message}</div>
+                        <div class="alert-details">
+                            <span>${timeStr}</span>
+                            <button class="btn" style="padding: 3px 8px; font-size: 0.75rem; background: var(--gray-light);" onclick="clearAlert(${index})">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                `;
+                alertsList.appendChild(alertItem);
+            });
+        }
+
+        // Room name editing functions
+        function startEditingRoomName(roomId) {
+            editingRoomId = roomId;
+            const saveBtn = document.getElementById(`save-btn-${roomId}`);
+            saveBtn.classList.add('visible');
+        }
+
+        function saveRoomName(roomId) {
+            const roomNameInput = document.querySelector(`#room-${roomId} .room-name`);
+            const newName = roomNameInput.value.trim();
+            const originalName = roomNameInput.getAttribute('data-original-name');
+            
+            if (!newName || newName === originalName) {
+                roomNameInput.value = originalName;
+                const saveBtn = document.getElementById(`save-btn-${roomId}`);
+                saveBtn.classList.remove('visible');
+                return;
+            }
+
+            // Update in Firebase
+            database.ref(`users/${userUid}/classrooms/${roomId}`).update({
+                name: newName
+            })
+            .then(() => {
+                // Update local data
+                const roomIndex = rooms.findIndex(r => r.id === roomId);
+                if (roomIndex !== -1) {
+                    rooms[roomIndex].customName = newName;
+                }
+                
+                // Update room name in active alerts
+                activeAlerts.forEach(alert => {
+                    if (alert.roomId === roomId) {
+                        alert.roomName = newName;
+                    }
+                });
+                
+                roomNameInput.setAttribute('data-original-name', newName);
+                const saveBtn = document.getElementById(`save-btn-${roomId}`);
+                saveBtn.classList.remove('visible');
+                
+                updateAlertsList();
+                showMessage('Room name updated successfully', 'success');
+            })
+            .catch(error => {
+                roomNameInput.value = originalName;
+                showMessage('Error updating room name', 'error');
+            });
+        }
+
+        function handleRoomNameKeyPress(event, roomId) {
+            if (event.key === 'Enter') {
+                saveRoomName(roomId);
+            }
+        }
+
+        // Alert functions
+        function toggleAlertsPanel() {
+            const alertsPanel = document.getElementById('alertsPanel');
+            alertsPanel.classList.toggle('active');
+            
+            if (alertsPanel.classList.contains('active')) {
+                updateAlertsList();
+            }
+        }
+
+        function clearAlert(index) {
+            if (index >= 0 && index < activeAlerts.length) {
+                const roomId = activeAlerts[index].roomId;
+                
+                // Clear alert in Firebase
+                database.ref(`classrooms/${roomId}/alert`).set('')
+                    .then(() => {
+                        activeAlerts.splice(index, 1);
+                        
+                        // Remove alert style from card
+                        document.getElementById(`room-${roomId}`).classList.remove('has-alert');
+                        
+                        updateGlobalAlertBell();
+                        updateAlertsList();
+                        showMessage('Alert cleared', 'success');
+                    })
+                    .catch(error => {
+                        console.error('Error clearing alert in Firebase:', error);
+                        showMessage('Error clearing alert', 'error');
+                    });
+            }
+        }
+
+        function clearAllAlerts() {
+            if (activeAlerts.length === 0) {
+                showMessage('No alerts to clear', 'info');
+                return;
+            }
+
+            // Clear all alerts in Firebase
+            const updatePromises = activeAlerts.map(alert => {
+                return database.ref(`classrooms/${alert.roomId}/alert`).set('');
+            });
+            
+            Promise.all(updatePromises)
+                .then(() => {
+                    // Remove alert style from all cards
+                    activeAlerts.forEach(alert => {
+                        const roomCard = document.getElementById(`room-${alert.roomId}`);
+                        if (roomCard) {
+                            roomCard.classList.remove('has-alert');
+                        }
+                    });
+                    
+                    activeAlerts = [];
+                    updateGlobalAlertBell();
+                    updateAlertsList();
+                    
+                    showMessage('All alerts cleared', 'success');
+                })
+                .catch(error => {
+                    showMessage('Error clearing alerts', 'error');
+                });
+        }
+
+        // Modal functions
+        function toggleAddRoomModal() {
+            const modal = document.getElementById('addRoomModal');
+            modal.classList.toggle('active');
+            
+            if (modal.classList.contains('active')) {
+                document.getElementById('newRoomId').value = '';
+                document.getElementById('newRoomName').value = '';
+                document.getElementById('newRoomId').focus();
+            }
+        }
+
+        function addNewRoom() {
+            const roomId = document.getElementById('newRoomId').value.trim();
+            const roomName = document.getElementById('newRoomName').value.trim();
+
+            if (!roomId) {
+                showMessage('Please enter Classroom ID', 'error');
+                return;
+            }
+
+            if (!roomName) {
+                showMessage('Please enter Display Name', 'error');
+                return;
+            }
+
+            // Check if room already exists in user's list
+            if (rooms.find(r => r.id === roomId)) {
+                showMessage('Classroom already exists in your list', 'error');
+                return;
+            }
+
+            // Check if classroom exists in system
+            database.ref(`classrooms/${roomId}`).once('value')
+                .then(snapshot => {
+                    if (snapshot.exists()) {
+                        // Add to user's classrooms
+                        return database.ref(`users/${userUid}/classrooms/${roomId}`).set({
+                            name: roomName,
+                            addedAt: new Date().toISOString()
+                        });
+                    } else {
+                        showMessage('Classroom not found in system', 'error');
+                        throw new Error('Classroom not found');
+                    }
+                })
+                .then(() => {
+                    // Add to local array
+                    const newRoom = { 
+                        id: roomId, 
+                        name: roomName,
+                        customName: roomName
+                    };
+                    rooms.push(newRoom);
+
+                    // Update the UI
+                    initializeDashboard();
+
+                    // Reset form and close modal
+                    toggleAddRoomModal();
+                    showMessage(`Classroom "${roomName}" added successfully`, 'success');
+                })
+                .catch(error => {
+                    if (error.message !== 'Classroom not found') {
+                        showMessage(`Error adding classroom: ${error.message}`, 'error');
+                    }
+                });
+        }
+
+        function showMessage(message, type) {
+            // Remove existing notifications
+            document.querySelectorAll('.notification').forEach(notif => {
+                notif.remove();
+            });
+ 
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'}"></i>
+                ${message}
+            `;
+ 
+            document.body.appendChild(notification);
+ 
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideUp 0.3s ease';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Navigation
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+    </script>
+
+    <!-- Footer -->
+    <footer class="app-footer" role="contentinfo" aria-label="Footer navigation">
+        <nav class="footer-nav" role="navigation" aria-label="Main footer">
+            <a href="index.html" id="footer-home" class="footer-link">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="#settings" id="footer-settings" class="footer-link">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+            <a href="#profile" id="footer-profile" class="footer-link">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </a>
+        </nav>
+    </footer>
+</body>
+</html>
