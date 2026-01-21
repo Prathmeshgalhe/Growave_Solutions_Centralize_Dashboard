@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Water Tank Monitoring - Growave</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        /* ===== RESET & BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        :root {
+            --primary: #0ea5e9;
+            --primary-light: #7dd3fc;
+            --primary-dark: #0369a1;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --light: #f8fafc;
+            --dark: #1e293b;
+            --gray: #64748b;
+            --gray-light: #e2e8f0;
+            --water-blue: #0284c7;
+            --water-light: #4fd1ff;
+            --border-radius: 12px;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* App container */
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Main content area */
+        .main-content {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: white;
+            box-shadow: var(--shadow);
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .logo i {
+            font-size: 1.4rem;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Alert Bell */
+        .alert-bell {
+            position: relative;
+            background: none;
+            border: none;
+            color: var(--gray);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .alert-bell:hover {
+            color: var(--primary);
+            background: rgba(14, 165, 233, 0.1);
+        }
+
+        .alert-bell.has-alerts {
+            color: var(--danger);
+        }
+
+        .alert-count {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--danger);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: bold;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translate(30%, -30%);
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(30%, -30%) scale(1); }
+            50% { transform: translate(30%, -30%) scale(1.2); }
+        }
+
+        .add-tank-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+
+        .add-tank-btn:hover {
+            background: #0da271;
+            transform: scale(1.05);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: var(--gray);
+            cursor: pointer;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover {
+            color: var(--danger);
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-header h2 {
+            font-size: 1.4rem;
+            color: var(--dark);
+            font-weight: 700;
+        }
+
+        .current-time {
+            font-size: 0.85rem;
+            color: var(--gray);
+            font-weight: 500;
+        }
+
+        /* ===== TANKS GRID ===== */
+        .tanks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        /* Tank Card - Minimal Design */
+        .tank-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 14px;
+            color: var(--dark);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-light);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tank-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .tank-card.has-alert {
+            border-left: 3px solid var(--danger);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .tank-name-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tank-icon {
+            color: var(--primary);
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .tank-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--dark);
+            border: none;
+            background: transparent;
+            outline: none;
+            flex: 1;
+            padding: 4px 6px;
+            border-radius: 4px;
+            transition: var(--transition);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tank-name:focus {
+            background: var(--light);
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+        }
+
+        .tank-save-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            opacity: 0;
+            visibility: hidden;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .tank-save-btn.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .tank-save-btn:hover {
+            background: #0da271;
+            transform: scale(1.05);
+        }
+
+        .status-badge {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            margin-left: 6px;
+            flex-shrink: 0;
+        }
+
+        .status-normal { background: var(--success); color: white; }
+        .status-low { background: var(--warning); color: white; }
+        .status-critical { background: var(--danger); color: white; }
+        .status-error { background: var(--dark); color: white; }
+
+        .tank-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 14px 0;
+        }
+
+        .water-level-percentage {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--water-blue);
+            line-height: 1;
+            margin-top: 8px;
+        }
+
+        .water-level-label {
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        .alert-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--danger);
+            animation: alert-pulse 1.5s infinite;
+            display: none;
+        }
+
+        .tank-card.has-alert .alert-indicator {
+            display: block;
+        }
+
+        @keyframes alert-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* ===== FLOATING ALERTS CARD ===== */
+        .alerts-floating-card {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 320px;
+            max-height: 400px;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            border: 1px solid var(--gray-light);
+            overflow: hidden;
+            animation: slideInRight 0.3s ease;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        .alerts-floating-card.active {
+            display: flex;
+        }
+
+        .alerts-floating-card.minimized {
+            height: 48px;
+            max-height: 48px;
+        }
+
+        .alerts-header {
+            padding: 14px 16px;
+            background: linear-gradient(135deg, var(--danger), #f87171);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .alerts-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alerts-header-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .minimize-btn,
+        .close-alerts-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.8rem;
+        }
+
+        .minimize-btn:hover,
+        .close-alerts-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .alerts-body {
+            flex: 1;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+
+        .alerts-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .alert-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            transition: var(--transition);
+            background: white;
+        }
+
+        .alert-item:last-child {
+            border-bottom: none;
+        }
+
+        .alert-item:hover {
+            background: #f8fafc;
+        }
+
+        .alert-icon {
+            color: var(--danger);
+            font-size: 0.9rem;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+            line-height: 1.3;
+        }
+
+        .alert-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--gray);
+        }
+
+        .clear-alert-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 3px;
+            transition: var(--transition);
+        }
+
+        .clear-alert-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .no-alerts {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--gray);
+        }
+
+        .no-alerts i {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+
+        .no-alerts p {
+            font-size: 0.9rem;
+        }
+
+        /* ===== MODALS ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1100;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: var(--border-radius);
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--gray-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+        }
+
+        .modal-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            opacity: 0.8;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.9rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--gray-light);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        .form-hint {
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-top: 4px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--gray-light);
+            color: var(--dark);
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        /* ===== AUTH SECTION ===== */
+        .auth-container {
+            max-width: 360px;
+            margin: 40px auto;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        .auth-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .auth-header h2 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .auth-header p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .auth-form {
+            padding: 24px;
+        }
+
+        .auth-form-group {
+            margin-bottom: 16px;
+        }
+
+        .auth-form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.9rem;
+        }
+
+        .auth-form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--gray-light);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .auth-form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        .auth-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            width: 100%;
+            transition: var(--transition);
+        }
+
+        .auth-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .auth-message {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .auth-message.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .auth-message.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        /* ===== NOTIFICATIONS ===== */
+        .notification {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1200;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            animation: slideDown 0.3s ease;
+            min-width: 180px;
+            text-align: center;
+            font-size: 0.9rem;
+            max-width: 90%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .notification.success { background: var(--success); }
+        .notification.error { background: var(--danger); }
+        .notification.info { background: var(--info); }
+
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(0); opacity: 1; }
+            to { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px 16px;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            color: var(--gray-light);
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            font-size: 1.2rem;
+            color: var(--gray);
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: var(--gray);
+            margin-bottom: 20px;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+            font-size: 0.9rem;
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (min-width: 640px) {
+            .tanks-grid {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+                gap: 16px;
+            }
+            
+            .main-content {
+                padding: 20px;
+                padding-bottom: 80px;
+            }
+            
+            .tank-card {
+                padding: 16px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .tanks-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 20px;
+            }
+            
+            .header {
+                padding: 18px 24px;
+            }
+            
+            .dashboard-header h2 {
+                font-size: 1.5rem;
+            }
+            
+            .alerts-floating-card {
+                width: 350px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .tanks-grid {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            }
+        }
+
+        /* ===== UTILITY CLASSES ===== */
+        .hidden {
+            display: none !important;
+        }
+
+        /* ===== FOOTER ===== */
+        .app-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            z-index: 999;
+            box-shadow: 0 -2px 16px rgba(0,0,0,0.06);
+            padding: 12px 0;
+            border-top: 1px solid var(--gray-light);
+        }
+
+        .footer-nav {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .footer-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--gray);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.8rem;
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .footer-link.active,
+        .footer-link:hover {
+            color: var(--primary);
+            background: rgba(14, 165, 233, 0.08);
+        }
+
+        /* Hide footer on auth page */
+        #authSection:not(.hidden) ~ footer.app-footer {
+            display: none;
+        }
+
+        /* Spacer for last item */
+        .bottom-spacer {
+            height: 20px;
+            width: 100%;
+            pointer-events: none;
+        }
+
+        /* Wave animation styles from original tank card */
+        @keyframes wave1 {
+            0% { d: path("M0,10 Q20,0 40,8 T80,6 T112,10 L112,200 L0,200 Z"); }
+            25% { d: path("M0,8 Q20,14 40,6 T80,12 T112,8 L112,200 L0,200 Z"); }
+            50% { d: path("M0,12 Q20,4 40,10 T80,8 T112,12 L112,200 L0,200 Z"); }
+            75% { d: path("M0,6 Q20,12 40,8 T80,4 T112,10 L112,200 L0,200 Z"); }
+            100% { d: path("M0,10 Q20,0 40,8 T80,6 T112,10 L112,200 L0,200 Z"); }
+        }
+
+        @keyframes wave2 {
+            0% { d: path("M0,14 Q24,22 48,14 T96,16 T112,14 L112,200 L0,200 Z"); }
+            33% { d: path("M0,16 Q24,8 48,18 T96,10 T112,16 L112,200 L0,200 Z"); }
+            66% { d: path("M0,12 Q24,20 48,12 T96,18 T112,14 L112,200 L0,200 Z"); }
+            100% { d: path("M0,14 Q24,22 48,14 T96,16 T112,14 L112,200 L0,200 Z"); }
+        }
+
+        @keyframes wave3 {
+            0% { d: path("M0,18 Q28,10 56,18 T112,20 L112,200 L0,200 Z"); }
+            50% { d: path("M0,20 Q28,26 56,18 T112,18 L112,200 L0,200 Z"); }
+            100% { d: path("M0,18 Q28,10 56,18 T112,20 L112,200 L0,200 Z"); }
+        }
+
+        .wave-path-1 {
+            animation: wave1 3.5s ease-in-out infinite;
+        }
+
+        .wave-path-2 {
+            animation: wave2 4.2s ease-in-out infinite;
+            animation-delay: -1s;
+        }
+
+        .wave-path-3 {
+            animation: wave3 5s ease-in-out infinite;
+            animation-delay: -2s;
+        }
+    </style>
+</head>
+<body>
+    <!-- Authentication Section -->
+    <div id="authSection" class="auth-container">
+        <div class="auth-header">
+            <h2><i class="fas fa-water"></i> Water Tank Monitor</h2>
+            <p>Real-time water level monitoring system</p>
+        </div>
+        <div class="auth-form">
+            <div class="auth-form-group">
+                <label for="loginEmail">Email</label>
+                <input type="email" id="loginEmail" placeholder="Enter your email">
+            </div>
+            <div class="auth-form-group">
+                <label for="loginPassword">Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter your password">
+            </div>
+            <button class="auth-btn" onclick="login()">Login</button>
+            <div id="loginMessage" class="auth-message"></div>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="app-container hidden">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-water"></i>
+                <span>Water Tank Monitor</span>
+            </div>
+
+            <div class="header-controls">
+                <!-- Alert Bell -->
+                <button class="alert-bell" id="globalAlertBell" onclick="toggleAlertsCard()">
+                    <i class="fas fa-bell"></i>
+                    <span class="alert-count" id="globalAlertCount">0</span>
+                </button>
+
+                <!-- Add Tank Button -->
+                <button class="add-tank-btn" title="Add water tank" onclick="toggleAddTankModal()">
+                    <i class="fas fa-plus"></i>
+                </button>
+
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <button class="logout-btn" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <h2>Water Tank Monitoring</h2>
+                <div class="current-time" id="currentTime">Loading...</div>
+            </div>
+
+            <!-- Tanks Grid -->
+            <div class="tanks-grid" id="tanksGrid">
+                <!-- Tank cards will be dynamically added here -->
+            </div>
+
+            <!-- Spacer for footer -->
+            <div class="bottom-spacer" aria-hidden="true"></div>
+        </div>
+    </div>
+
+    <!-- Floating Alerts Card -->
+    <div class="alerts-floating-card" id="alertsCard">
+        <div class="alerts-header">
+            <h3><i class="fas fa-exclamation-triangle"></i> Active Alerts</h3>
+            <div class="alerts-header-controls">
+                <button class="minimize-btn" onclick="toggleMinimizeAlertsCard()">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button class="close-alerts-btn" onclick="closeAlertsCard()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="alerts-body" id="alertsBody">
+            <div class="alerts-list" id="alertsList">
+                <!-- Alerts will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Tank Modal -->
+    <div id="addTankModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Water Tank</h3>
+                <button class="modal-close" onclick="toggleAddTankModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Tank ID</label>
+                    <input type="text" id="newTankId" class="form-input" placeholder="hostel_block_d">
+                    <div class="form-hint">Enter the exact Tank ID from the monitoring system</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Display Name</label>
+                    <input type="text" id="newTankName" class="form-input" placeholder="Hostel Block D Tank">
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="toggleAddTankModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="addNewTank()">Add Tank</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================
+        // FIREBASE CONFIGURATION
+        // ============================
+        const firebaseConfig = {
+            apiKey: "AIzaSyB0pxbiRe5flvA7BPqiJgyP8n8aWmkoLI4",
+            authDomain: "growave-esp32-central.firebaseapp.com",
+            databaseURL: "https://growave-esp32-central-default-rtdb.firebaseio.com",
+            projectId: "growave-esp32-central",
+            storageBucket: "growave-esp32-central.firebasestorage.app",
+            messagingSenderId: "518571286609",
+            appId: "1:518571286609:web:afdd9ef5f364873006d870",
+            measurementId: "G-XK1G35BGL0"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // ============================
+        // GLOBAL VARIABLES
+        // ============================
+        let tanks = [];
+        let activeAlerts = [];
+        let editingTankId = null;
+        let userUid = null;
+        let tankListeners = {};
+        let isAlertsCardMinimized = false;
+
+        // ============================
+        // AUTHENTICATION FUNCTIONS
+        // ============================
+        function initAuth() {
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+                .catch(error => console.error("Auth persistence error:", error));
+
+            auth.onAuthStateChanged(function(user) {
+                console.log('Auth state changed:', user ? 'User signed in' : 'User signed out');
+                
+                if (user) {
+                    userUid = user.uid;
+                    document.getElementById('userAvatar').textContent = user.email.charAt(0).toUpperCase();
+                    showDashboard();
+                    loadUserTanks();
+                } else {
+                    showAuth();
+                }
+            });
+        }
+
+        function login() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const messageElement = document.getElementById('loginMessage');
+
+            if (!email || !password) {
+                showMessage('Please enter email and password', 'error');
+                return;
+            }
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    if (messageElement) {
+                        messageElement.textContent = 'Login successful!';
+                        messageElement.className = 'auth-message success';
+                    }
+                })
+                .catch(error => {
+                    if (messageElement) {
+                        messageElement.textContent = error.message;
+                        messageElement.className = 'auth-message error';
+                    }
+                });
+        }
+
+        function logout() {
+            auth.signOut()
+                .then(() => {
+                    showAuth();
+                    showMessage('Logged out successfully', 'success');
+                })
+                .catch(error => {
+                    console.error('Logout error:', error);
+                    showMessage('Error logging out', 'error');
+                });
+        }
+
+        function showAuth() {
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('dashboardSection').classList.add('hidden');
+            tanks = [];
+            activeAlerts = [];
+            closeAlertsCard();
+        }
+
+        function showDashboard() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            updateCurrentTime();
+        }
+
+        // ============================
+        // USER TANKS MANAGEMENT
+        // ============================
+        function loadUserTanks() {
+            if (!userUid) return;
+
+            database.ref(`users/${userUid}/tanks`).once('value')
+                .then(snapshot => {
+                    const userTanks = snapshot.val();
+                    tanks = [];
+
+                    if (userTanks) {
+                        Object.keys(userTanks).forEach(tankId => {
+                            tanks.push({
+                                id: tankId,
+                                name: userTanks[tankId].name || tankId,
+                                customName: userTanks[tankId].name || null,
+                                addedAt: userTanks[tankId].addedAt
+                            });
+                        });
+                    }
+
+                    initializeDashboard();
+                })
+                .catch(error => {
+                    console.error('Error loading user tanks:', error);
+                    showMessage('Error loading tanks', 'error');
+                });
+        }
+
+        function initializeDashboard() {
+            const tanksGrid = document.getElementById('tanksGrid');
+            
+            // Clear existing cards and listeners
+            tanksGrid.innerHTML = '';
+            Object.keys(tankListeners).forEach(tankId => {
+                database.ref(`water_tanks/${tankId}`).off('value', tankListeners[tankId]);
+            });
+            tankListeners = {};
+
+            if (tanks.length === 0) {
+                tanksGrid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-water"></i>
+                        </div>
+                        <h3>No Water Tanks Added</h3>
+                        <p>Add your first water tank to start monitoring water levels in real-time</p>
+                        <button class="btn btn-primary" onclick="toggleAddTankModal()" style="max-width: 200px; margin: 0 auto; display: block;">
+                            <i class="fas fa-plus"></i> Add Your First Tank
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            tanks.forEach(tank => {
+                createTankCard(tank);
+                setupTankListener(tank.id);
+            });
+
+            updateGlobalAlertBell();
+        }
+
+        // ============================
+        // TANK CARD CREATION
+        // ============================
+        function createTankCard(tank) {
+            const tanksGrid = document.getElementById('tanksGrid');
+
+            // Remove empty state if present
+            if (tanksGrid.innerHTML.includes('No Water Tanks Added')) {
+                tanksGrid.innerHTML = '';
+            }
+
+            const tankCard = document.createElement('div');
+            tankCard.className = 'tank-card';
+            tankCard.id = `tank-${tank.id}`;
+            tankCard.innerHTML = `
+                <div class="alert-indicator"></div>
+                <div class="card-header">
+                    <div class="tank-name-container">
+                        <i class="fas fa-water-tank tank-icon"></i>
+                        <input type="text" 
+                               class="tank-name" 
+                               value="${tank.customName || tank.id}" 
+                               data-original-name="${tank.customName || tank.id}"
+                               onfocus="startEditingTankName('${tank.id}')"
+                               onblur="saveTankName('${tank.id}')"
+                               onkeypress="handleTankNameKeyPress(event, '${tank.id}')">
+                    </div>
+                    <div class="status-badge" id="status-badge-${tank.id}">LOADING</div>
+                    <button class="tank-save-btn" id="save-btn-${tank.id}" onclick="saveTankName('${tank.id}')">
+                        <i class="fas fa-check"></i>
+                    </button>
+                </div>
+                
+                <div class="tank-container">
+                    <div id="tank-svg-${tank.id}"></div>
+                    <div class="water-level-percentage" id="level-percentage-${tank.id}">0%</div>
+                    <div class="water-level-label">Water Level</div>
+                </div>
+            `;
+
+            tanksGrid.appendChild(tankCard);
+            
+            // Initialize tank SVG with original animation
+            createTankSVG(tank.id);
+        }
+
+        function createTankSVG(tankId) {
+            const svgContainer = document.getElementById(`tank-svg-${tankId}`);
+            
+            // Create original animated tank SVG
+            svgContainer.innerHTML = `
+                <svg width="140" height="140" viewBox="0 0 140 140">
+                    <defs>
+                        <!-- Main water gradient -->
+                        <linearGradient id="waterGradient-${tankId}" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#4fd1ff" />
+                            <stop offset="100%" stop-color="#0284c7" />
+                        </linearGradient>
+                        
+                        <!-- Lighter gradient for wave overlay -->
+                        <linearGradient id="waveGradient1-${tankId}" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#7ee8ff" stop-opacity="0.7" />
+                            <stop offset="100%" stop-color="#4fd1ff" stop-opacity="0.4" />
+                        </linearGradient>
+                        
+                        <linearGradient id="waveGradient2-${tankId}" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#a5f3ff" stop-opacity="0.5" />
+                            <stop offset="100%" stop-color="#7ee8ff" stop-opacity="0.25" />
+                        </linearGradient>
+                        
+                        <linearGradient id="waveGradient3-${tankId}" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#d0f7ff" stop-opacity="0.3" />
+                            <stop offset="100%" stop-color="#a5f3ff" stop-opacity="0.15" />
+                        </linearGradient>
+                        
+                        <!-- Metallic tank gradient -->
+                        <linearGradient id="tankMetal-${tankId}" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stop-color="#94a3b8" />
+                            <stop offset="30%" stop-color="#cbd5e1" />
+                            <stop offset="50%" stop-color="#e2e8f0" />
+                            <stop offset="70%" stop-color="#cbd5e1" />
+                            <stop offset="100%" stop-color="#94a3b8" />
+                        </linearGradient>
+                        
+                        <!-- Tank shadow gradient -->
+                        <linearGradient id="tankShadow-${tankId}" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stop-color="#64748b" stop-opacity="0.5" />
+                            <stop offset="50%" stop-color="#94a3b8" stop-opacity="0.2" />
+                            <stop offset="100%" stop-color="#64748b" stop-opacity="0.5" />
+                        </linearGradient>
+                        
+                        <!-- Top rim gradient -->
+                        <linearGradient id="rimGradient-${tankId}" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#cbd5e1" />
+                            <stop offset="50%" stop-color="#94a3b8" />
+                            <stop offset="100%" stop-color="#64748b" />
+                        </linearGradient>
+                        
+                        <!-- Clip path for water area -->
+                        <clipPath id="tankClip-${tankId}">
+                            <rect x="20" y="32" width="100" height="78" rx="2" />
+                        </clipPath>
+                        
+                        <!-- Filter for metallic shine -->
+                        <filter id="metalShine-${tankId}">
+                            <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+                            <feOffset dx="1" dy="1" result="offsetblur" />
+                            <feComponentTransfer>
+                                <feFuncA type="linear" slope="0.3" />
+                            </feComponentTransfer>
+                            <feMerge>
+                                <feMergeNode />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    
+                    <!-- Support base/platform -->
+                    <ellipse cx="70" cy="130" rx="50" ry="6" fill="#94a3b8" opacity="0.4" />
+                    
+                    <!-- Tank bottom (3D perspective) -->
+                    <ellipse cx="70" cy="120" rx="55" ry="8" fill="url(#tankShadow-${tankId})" />
+                    <ellipse cx="70" cy="118" rx="55" ry="8" fill="url(#tankMetal-${tankId})" />
+                    
+                    <!-- Main tank body with metallic look -->
+                    <rect x="15" y="20" width="110" height="100" rx="3" fill="url(#tankMetal-${tankId})" stroke="#64748b" stroke-width="1" />
+                    
+                    <!-- Inner shadow (left side) -->
+                    <rect x="15" y="20" width="15" height="100" rx="3" fill="url(#tankShadow-${tankId})" opacity="0.6" />
+                    
+                    <!-- Inner shadow (right side) -->
+                    <rect x="110" y="20" width="15" height="100" rx="3" fill="url(#tankShadow-${tankId})" opacity="0.6" />
+                    
+                    <!-- Horizontal bands (structural reinforcement) -->
+                    <rect x="15" y="50" width="110" height="3" fill="#64748b" opacity="0.6" />
+                    <rect x="15" y="80" width="110" height="3" fill="#64748b" opacity="0.6" />
+                    
+                    <!-- Highlight bands -->
+                    <rect x="15" y="52" width="110" height="1" fill="#ffffff" opacity="0.8" />
+                    <rect x="15" y="82" width="110" height="1" fill="#ffffff" opacity="0.8" />
+                    
+                    <!-- Inner tank cavity (darker) -->
+                    <rect x="20" y="28" width="100" height="82" rx="2" fill="#1e293b" />
+                    
+                    <!-- Water group with clipping -->
+                    <g clip-path="url(#tankClip-${tankId})">
+                        <!-- Base water rectangle -->
+                        <rect id="water-${tankId}" x="20" y="110" width="100" height="0" fill="url(#waterGradient-${tankId})" />
+                        
+                        <!-- Wave layer container - will be translated based on water level -->
+                        <g id="waveContainer-${tankId}">
+                            <!-- Back wave (slowest, deepest) -->
+                            <path class="wave-path-3" fill="url(#waveGradient3-${tankId})" d="M0,18 Q25,10 50,18 T100,20 L100,80 L0,80 Z" />
+                            
+                            <!-- Middle wave -->
+                            <path class="wave-path-2" fill="url(#waveGradient2-${tankId})" d="M0,14 Q21,22 42,14 T84,16 T100,14 L100,80 L0,80 Z" />
+                            
+                            <!-- Front wave (fastest, most visible) -->
+                            <path class="wave-path-1" fill="url(#waveGradient1-${tankId})" d="M0,10 Q18,0 36,8 T72,6 T100,10 L100,80 L0,80 Z" />
+                        </g>
+                    </g>
+                    
+                    <!-- Top rim of tank (3D effect) -->
+                    <ellipse cx="70" cy="20" rx="55" ry="8" fill="url(#rimGradient-${tankId})" />
+                    <ellipse cx="70" cy="18" rx="55" ry="7" fill="url(#tankMetal-${tankId})" />
+                    
+                    <!-- Inner rim edge -->
+                    <ellipse cx="70" cy="28" rx="50" ry="6" fill="#1e293b" opacity="0.9" />
+                    
+                    <!-- Metallic highlights on tank body -->
+                    <rect x="22" y="30" width="4" height="78" rx="2" fill="rgba(255,255,255,0.15)" filter="url(#metalShine-${tankId})" />
+                    <rect x="35" y="30" width="2" height="78" rx="1" fill="rgba(255,255,255,0.08)" />
+                    
+                    <!-- Level indicator marks on side -->
+                    <line x1="12" y1="50" x2="17" y2="50" stroke="#94a3b8" stroke-width="1" />
+                    <line x1="12" y1="80" x2="17" y2="80" stroke="#94a3b8" stroke-width="1" />
+                    <line x1="12" y1="110" x2="17" y2="110" stroke="#94a3b8" stroke-width="1" />
+                </svg>
+            `;
+        }
+
+        function setupTankListener(tankId) {
+            const tankPath = `water_tanks/${tankId}`;
+            
+            // Remove existing listener if any
+            if (tankListeners[tankId]) {
+                database.ref(tankPath).off('value', tankListeners[tankId]);
+            }
+            
+            // Add new listener
+            tankListeners[tankId] = database.ref(tankPath).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    updateTankCard(tankId, data);
+                    checkForAlerts(tankId, data);
+                } else {
+                    updateTankCard(tankId, {
+                        tank1: 0,
+                        status: 2,
+                        alert: 'Tank not found'
+                    });
+                }
+            });
+        }
+
+        // ============================
+        // TANK DATA UPDATES
+        // ============================
+        function updateTankCard(tankId, data) {
+            const level = data.tank1 || 0;
+            
+            // Update percentage display
+            document.getElementById(`level-percentage-${tankId}`).textContent = `${Math.round(level)}%`;
+            
+            // Update status badge based on water level
+            const statusBadge = document.getElementById(`status-badge-${tankId}`);
+            if (level < 20) {
+                statusBadge.textContent = 'CRITICAL';
+                statusBadge.className = 'status-badge status-critical';
+            } else if (level < 50) {
+                statusBadge.textContent = 'LOW';
+                statusBadge.className = 'status-badge status-low';
+            } else {
+                statusBadge.textContent = 'NORMAL';
+                statusBadge.className = 'status-badge status-normal';
+            }
+            
+            // Update water level animation
+            updateWaterLevel(tankId, level);
+        }
+
+        function updateWaterLevel(tankId, level) {
+            const water = document.getElementById(`water-${tankId}`);
+            const waveContainer = document.getElementById(`waveContainer-${tankId}`);
+            
+            if (!water || !waveContainer) return;
+            
+            const tankHeight = 78; // Adjusted for smaller SVG
+            const waterHeight = (level / 100) * tankHeight;
+            const waterY = 110 - waterHeight;
+            
+            water.setAttribute("y", waterY);
+            water.setAttribute("height", waterHeight);
+            
+            // Position the wave container at the top of the water
+            waveContainer.setAttribute("transform", `translate(20, ${waterY - 18})`);
+        }
+
+        // ============================
+        // ALERT SYSTEM
+        // ============================
+        function checkForAlerts(tankId, data) {
+            const tank = tanks.find(t => t.id === tankId);
+            if (!tank) return;
+
+            const tankAlertIndex = activeAlerts.findIndex(alert => alert.tankId === tankId);
+            
+            // Check for alert conditions
+            let alertMessage = '';
+            let alertLevel = 'info';
+            
+            if (data.alert && data.alert !== 0) {
+                alertMessage = getAlertMessage(data.alert);
+                alertLevel = 'error';
+            } else if (data.tank1 < 20) {
+                alertMessage = 'Critical water level!';
+                alertLevel = 'critical';
+            } else if (data.tank1 < 50) {
+                alertMessage = 'Low water level warning';
+                alertLevel = 'warning';
+            }
+            
+            if (alertMessage) {
+                const alertData = {
+                    tankId: tankId,
+                    tankName: tank.customName || tank.id,
+                    message: alertMessage,
+                    level: alertLevel,
+                    timestamp: data.lastUpdate || Date.now()
+                };
+                
+                if (tankAlertIndex === -1) {
+                    activeAlerts.push(alertData);
+                } else {
+                    activeAlerts[tankAlertIndex] = alertData;
+                }
+                
+                document.getElementById(`tank-${tankId}`).classList.add('has-alert');
+            } else {
+                if (tankAlertIndex !== -1) {
+                    activeAlerts.splice(tankAlertIndex, 1);
+                }
+                document.getElementById(`tank-${tankId}`).classList.remove('has-alert');
+            }
+            
+            updateGlobalAlertBell();
+            updateAlertsList();
+        }
+
+        function getAlertMessage(alertCode) {
+            switch(alertCode) {
+                case 1: return 'Tank sensor failure';
+                case 2: return 'Communication error';
+                case 3: return 'System restart required';
+                default: return 'Alert detected';
+            }
+        }
+
+        function updateGlobalAlertBell() {
+            const totalAlerts = activeAlerts.length;
+            const alertBell = document.getElementById('globalAlertBell');
+            const alertCount = document.getElementById('globalAlertCount');
+            
+            alertCount.textContent = totalAlerts;
+            
+            if (totalAlerts > 0) {
+                alertBell.classList.add('has-alerts');
+                alertCount.classList.add('pulse');
+            } else {
+                alertBell.classList.remove('has-alerts');
+                alertCount.classList.remove('pulse');
+            }
+        }
+
+        function updateAlertsList() {
+            const alertsList = document.getElementById('alertsList');
+            
+            if (activeAlerts.length === 0) {
+                alertsList.innerHTML = `
+                    <div class="no-alerts">
+                        <i class="fas fa-check-circle"></i>
+                        <p>No active alerts</p>
+                        <p style="font-size: 0.8rem; margin-top: 4px;">All systems are normal</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let alertsHTML = '';
+            activeAlerts.forEach((alert, index) => {
+                const alertTime = new Date(alert.timestamp);
+                const timeStr = alertTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const dateStr = alertTime.toLocaleDateString();
+                
+                alertsHTML += `
+                    <div class="alert-item">
+                        <div class="alert-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-title">${alert.tankName}: ${alert.message}</div>
+                            <div class="alert-details">
+                                <span>${dateStr} ${timeStr}</span>
+                                <button class="clear-alert-btn" onclick="clearAlert(${index})">
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            alertsList.innerHTML = alertsHTML;
+        }
+
+        // ============================
+        // ALERTS CARD FUNCTIONS
+        // ============================
+        function toggleAlertsCard() {
+            const alertsCard = document.getElementById('alertsCard');
+            const isActive = alertsCard.classList.contains('active');
+            
+            if (!isActive) {
+                // Show alerts card
+                alertsCard.classList.add('active');
+                if (isAlertsCardMinimized) {
+                    alertsCard.classList.add('minimized');
+                }
+                updateAlertsList();
+            } else {
+                // Hide alerts card
+                closeAlertsCard();
+            }
+        }
+
+        function closeAlertsCard() {
+            const alertsCard = document.getElementById('alertsCard');
+            alertsCard.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => {
+                alertsCard.classList.remove('active');
+                alertsCard.style.animation = '';
+            }, 300);
+        }
+
+        function toggleMinimizeAlertsCard() {
+            const alertsCard = document.getElementById('alertsCard');
+            const alertsBody = document.getElementById('alertsBody');
+            const minimizeBtn = document.querySelector('.minimize-btn i');
+            
+            isAlertsCardMinimized = !isAlertsCardMinimized;
+            
+            if (isAlertsCardMinimized) {
+                alertsCard.classList.add('minimized');
+                alertsBody.style.display = 'none';
+                minimizeBtn.className = 'fas fa-plus';
+            } else {
+                alertsCard.classList.remove('minimized');
+                alertsBody.style.display = 'block';
+                minimizeBtn.className = 'fas fa-minus';
+            }
+        }
+
+        function clearAlert(index) {
+            if (index >= 0 && index < activeAlerts.length) {
+                const tankId = activeAlerts[index].tankId;
+                activeAlerts.splice(index, 1);
+                
+                // Check if tank still has alerts
+                const hasOtherAlerts = activeAlerts.some(alert => alert.tankId === tankId);
+                if (!hasOtherAlerts) {
+                    document.getElementById(`tank-${tankId}`).classList.remove('has-alert');
+                }
+                
+                updateGlobalAlertBell();
+                updateAlertsList();
+                showMessage('Alert cleared', 'success');
+            }
+        }
+
+        // ============================
+        // TANK MANAGEMENT
+        // ============================
+        function startEditingTankName(tankId) {
+            editingTankId = tankId;
+            const saveBtn = document.getElementById(`save-btn-${tankId}`);
+            saveBtn.classList.add('visible');
+        }
+
+        function saveTankName(tankId) {
+            const tankNameInput = document.querySelector(`#tank-${tankId} .tank-name`);
+            const newName = tankNameInput.value.trim();
+            const originalName = tankNameInput.getAttribute('data-original-name');
+            
+            if (!newName || newName === originalName) {
+                tankNameInput.value = originalName;
+                const saveBtn = document.getElementById(`save-btn-${tankId}`);
+                saveBtn.classList.remove('visible');
+                return;
+            }
+
+            // Update in Firebase
+            database.ref(`users/${userUid}/tanks/${tankId}`).update({
+                name: newName,
+                updatedAt: new Date().toISOString()
+            })
+            .then(() => {
+                // Update local data
+                const tankIndex = tanks.findIndex(t => t.id === tankId);
+                if (tankIndex !== -1) {
+                    tanks[tankIndex].customName = newName;
+                }
+                
+                // Update tank name in active alerts
+                activeAlerts.forEach(alert => {
+                    if (alert.tankId === tankId) {
+                        alert.tankName = newName;
+                    }
+                });
+                
+                tankNameInput.setAttribute('data-original-name', newName);
+                const saveBtn = document.getElementById(`save-btn-${tankId}`);
+                saveBtn.classList.remove('visible');
+                
+                updateAlertsList();
+                showMessage('Tank name updated', 'success');
+            })
+            .catch(error => {
+                tankNameInput.value = originalName;
+                showMessage('Error updating tank name', 'error');
+            });
+        }
+
+        function handleTankNameKeyPress(event, tankId) {
+            if (event.key === 'Enter') {
+                saveTankName(tankId);
+            }
+        }
+
+        function toggleAddTankModal() {
+            const modal = document.getElementById('addTankModal');
+            modal.classList.toggle('active');
+            
+            if (modal.classList.contains('active')) {
+                document.getElementById('newTankId').value = '';
+                document.getElementById('newTankName').value = '';
+                document.getElementById('newTankId').focus();
+            }
+        }
+
+        function addNewTank() {
+            const tankId = document.getElementById('newTankId').value.trim();
+            const tankName = document.getElementById('newTankName').value.trim();
+
+            if (!tankId) {
+                showMessage('Please enter Tank ID', 'error');
+                return;
+            }
+
+            if (!tankName) {
+                showMessage('Please enter Display Name', 'error');
+                return;
+            }
+
+            // Check if tank already exists in user's list
+            if (tanks.find(t => t.id === tankId)) {
+                showMessage('Tank already exists in your list', 'error');
+                return;
+            }
+
+            // Check if tank exists in system
+            database.ref(`water_tanks/${tankId}`).once('value')
+                .then(snapshot => {
+                    if (snapshot.exists()) {
+                        // Add to user's tanks
+                        return database.ref(`users/${userUid}/tanks/${tankId}`).set({
+                            name: tankName,
+                            addedAt: new Date().toISOString()
+                        });
+                    } else {
+                        showMessage('Tank not found in monitoring system', 'error');
+                        throw new Error('Tank not found');
+                    }
+                })
+                .then(() => {
+                    // Add to local array
+                    const newTank = { 
+                        id: tankId, 
+                        name: tankName,
+                        customName: tankName,
+                        addedAt: new Date().toISOString()
+                    };
+                    tanks.push(newTank);
+
+                    // Update the UI
+                    initializeDashboard();
+
+                    // Reset form and close modal
+                    toggleAddTankModal();
+                    showMessage(`Tank "${tankName}" added successfully`, 'success');
+                })
+                .catch(error => {
+                    if (error.message !== 'Tank not found') {
+                        showMessage(`Error adding tank: ${error.message}`, 'error');
+                    }
+                });
+        }
+
+        // ============================
+        // UTILITIES
+        // ============================
+        function updateCurrentTime() {
+            const timeElement = document.getElementById('currentTime');
+            if (timeElement) {
+                const now = new Date();
+                timeElement.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            }
+        }
+
+        function showMessage(message, type) {
+            // Remove existing notifications
+            document.querySelectorAll('.notification').forEach(notif => {
+                notif.remove();
+            });
+            
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'}"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideUp 0.3s ease';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // ============================
+        // INITIALIZATION
+        // ============================
+        document.addEventListener('DOMContentLoaded', function() {
+            initAuth();
+            
+            // Update current time every minute
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 60000);
+        });
+    </script>
+
+    <!-- Footer -->
+    <footer class="app-footer" role="contentinfo" aria-label="Footer navigation">
+        <nav class="footer-nav" role="navigation" aria-label="Main footer">
+            <a href="index.html" id="footer-home" class="footer-link active">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="#profile" id="footer-profile" class="footer-link">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </a>
+            <a href="#settings" id="footer-settings" class="footer-link">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </nav>
+    </footer>
+</body>
+</html>
