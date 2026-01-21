@@ -456,11 +456,12 @@
                     <div class="type-title">Room Devices</div>
                     <div class="type-sub">Active</div>
                 </div>
- 
-                 <div class="type-card locked" title="Locked - coming soon">
+
+                <div class="type-card" role="button" tabindex="0" onclick="handleDeviceTypeClick('Water Tank Device')"
+                    onkeydown="if(event.key==='Enter') handleDeviceTypeClick('Water Tank Device')">
                      <div class="type-icon" style="background:linear-gradient(135deg,#0ea5a4,#38bdf8);"><i class="fas fa-tint"></i></div>
                      <div class="type-title">Water Tank Device</div>
-                     <div class="lock-badge"><i class="fas fa-lock"></i> Locked</div>
+                     <div class="type-sub">Active</div>
                  </div>
  
                  <div class="type-card locked" title="Locked - coming soon">
@@ -596,6 +597,10 @@
             }
             if (type === 'room') {
                 window.location.href = 'room-devices.html';
+                return;
+            }
+            if (type === 'Water Tank Device') {
+                window.location.href = 'water_tank_device.html';
                 return;
             }
             showMessage('This device type is locked or coming soon', 'info');
